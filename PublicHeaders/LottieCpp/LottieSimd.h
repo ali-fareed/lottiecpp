@@ -45,15 +45,18 @@ struct LottieFloat4{
     }
     
     LottieFloat4 operator*(float scalar) const {
-        return { components[0] * scalar, components[1] * scalar, components[2] * scalar, components[3] * scalar };
+        LottieFloat4 result = { components[0] * scalar, components[1] * scalar, components[2] * scalar, components[3] * scalar };
+        return result;
     }
     
     LottieFloat4 operator+(LottieFloat4 other) const {
-        return { components[0] + other.components[0], components[1] + other.components[1], components[2] + other.components[2], components[3] + other.components[3] };
+        LottieFloat4 result = { components[0] + other.components[0], components[1] + other.components[1], components[2] + other.components[2], components[3] + other.components[3] };
+        return result;
     }
     
     LottieFloat4 operator+(float scalar) const {
-        return { components[0] + scalar, components[1] + scalar, components[2] + scalar, components[3] + scalar };
+        LottieFloat4 result = { components[0] + scalar, components[1] + scalar, components[2] + scalar, components[3] + scalar };
+        return result;
     }
 };
 
@@ -92,11 +95,12 @@ inline LottieFloat4 lottieSimdMakeFloat4(float a, float b, float c, float d) {
 
 inline LottieFloat3x3 lottieSimdMul(LottieFloat3x3 a, LottieFloat3x3 b) {
     LottieFloat3x3 result;
-    for (int i = 0; i < 3; i++) {
-        for (int j = 0; j < 3; j++) {
-            result.columns[j].components[i] = a.columns[0].components[i] * b.columns[j].components[0] +
-            a.columns[1].components[i] * b.columns[j].components[1] +
-            a.columns[2].components[i] * b.columns[j].components[2];
+    for (int i = 0; i < 3; ++i) {
+        for (int j = 0; j < 3; ++j) {
+            result.columns[i].components[j] =
+            a.columns[0].components[j] * b.columns[i].components[0] +
+            a.columns[1].components[j] * b.columns[i].components[1] +
+            a.columns[2].components[j] * b.columns[i].components[2];
         }
     }
     
@@ -130,7 +134,9 @@ inline float lottieSimdDeterminant(LottieFloat3x3 m) {
     float h = m.columns[1].components[2];
     float i = m.columns[2].components[2];
     
-    return a * (e * i - f * h) - b * (d * i - f * g) + c * (d * h - e * g);
+    float result = a * (e * i - f * h) - b * (d * i - f * g) + c * (d * h - e * g);
+    
+    return result;
 }
 
 inline LottieFloat3x3 lottieSimdInverse(LottieFloat3x3 m) {
@@ -155,15 +161,15 @@ inline LottieFloat3x3 lottieSimdInverse(LottieFloat3x3 m) {
     float invDet = 1.0f / det;
     
     result.columns[0].components[0] = (e * i - f * h) * invDet;
-    result.columns[0].components[1] = (c * h - b * i) * invDet;
-    result.columns[0].components[2] = (b * f - c * e) * invDet;
+    result.columns[1].components[0] = (c * h - b * i) * invDet;
+    result.columns[2].components[0] = (b * f - c * e) * invDet;
     
-    result.columns[1].components[0] = (f * g - d * i) * invDet;
+    result.columns[0].components[1] = (f * g - d * i) * invDet;
     result.columns[1].components[1] = (a * i - c * g) * invDet;
-    result.columns[1].components[2] = (c * d - a * f) * invDet;
+    result.columns[2].components[1] = (c * d - a * f) * invDet;
     
-    result.columns[2].components[0] = (d * h - e * g) * invDet;
-    result.columns[2].components[1] = (b * g - a * h) * invDet;
+    result.columns[0].components[2] = (d * h - e * g) * invDet;
+    result.columns[1].components[2] = (b * g - a * h) * invDet;
     result.columns[2].components[2] = (a * e - b * d) * invDet;
     
     return result;

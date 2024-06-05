@@ -516,7 +516,7 @@ BezierPathsBoundingBoxContext::~BezierPathsBoundingBoxContext() {
 }
 
 static CGRect calculateBoundingRectOpt(float const *pointsX, float const *pointsY, int count) {
-#if __APPLE__ && true
+#if __APPLE__
     float minX = 0.0;
     float maxX = 0.0;
     vDSP_minv(pointsX, 1, &minX, count);

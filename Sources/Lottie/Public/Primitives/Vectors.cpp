@@ -5,8 +5,7 @@
 #include "Lottie/Public/Keyframes/Interpolatable.hpp"
 
 #include <math.h>
-
-#import <QuartzCore/QuartzCore.h>
+#include <cfloat>
 
 namespace lottie {
 
@@ -508,42 +507,44 @@ Vector2D Vector2D::interpolate(
     return point.point;
 }
 
-::CATransform3D nativeTransform(Transform2D const &value) {
-    CGAffineTransform at = CGAffineTransformMake(
-        value.rows().columns[0][0], value.rows().columns[0][1],
-        value.rows().columns[1][0], value.rows().columns[1][1],
-        value.rows().columns[2][0], value.rows().columns[2][1]
-    );
-    return CATransform3DMakeAffineTransform(at);
-}
-
-Transform2D fromNativeTransform(::CATransform3D const &value) {
-    CGAffineTransform at = CATransform3DGetAffineTransform(value);
-    return Transform2D(
-        LottieFloat3x3({
-            lottieSimdMakeFloat3(at.a, at.b, 0.0),
-            lottieSimdMakeFloat3(at.c, at.d, 0.0),
-            lottieSimdMakeFloat3(at.tx, at.ty, 1.0)
-        })
-    );
-}
-
 bool CGRect::intersects(CGRect const &other) const {
-    return CGRectIntersectsRect(CGRectMake(x, y, width, height), CGRectMake(other.x, other.y, other.width, other.height));
+    if (x + width < other.x || other.x + other.width < x) {
+        return false;
+    }
+    // Check if one rectangle is above the other
+    if (y + height < other.y || other.y + other.height < y) {
+        return false;
+    }
+    return true;
 }
 
 bool CGRect::contains(CGRect const &other) const {
-    return CGRectContainsRect(CGRectMake(x, y, width, height), CGRectMake(other.x, other.y, other.width, other.height));
+    return (other.x >= x) &&
+        (other.y >= y) &&
+        (other.x + other.width <= x + width) &&
+        (other.y + other.height <= y + height);
 }
 
 CGRect CGRect::intersection(CGRect const &other) const {
-    auto result = CGRectIntersection(CGRectMake(x, y, width, height), CGRectMake(other.x, other.y, other.width, other.height));
-    return CGRect(result.origin.x, result.origin.y, result.size.width, result.size.height);
+    if (!intersects(other)) {
+        return CGRect(0, 0, 0, 0);
+    }
+    
+    float intersectX = std::max(x, other.x);
+    float intersectY = std::max(y, other.y);
+    float intersectWidth = std::min(x + width, other.x + other.width) - intersectX;
+    float intersectHeight = std::min(y + height, other.y + other.height) - intersectY;
+    
+    return CGRect(intersectX, intersectY, intersectWidth, intersectHeight);
 }
 
 CGRect CGRect::unionWith(CGRect const &other) const {
-    auto result = CGRectUnion(CGRectMake(x, y, width, height), CGRectMake(other.x, other.y, other.width, other.height));
-    return CGRect(result.origin.x, result.origin.y, result.size.width, result.size.height);
+    float unionX = std::min(x, other.x);
+    float unionY = std::min(y, other.y);
+    float unionWidth = std::max(x + width, other.x + other.width) - unionX;
+    float unionHeight = std::max(y + height, other.y + other.height) - unionY;
+    
+    return CGRect(unionX, unionY, unionWidth, unionHeight);
 }
 
 CGRect CGRect::applyingTransform(Transform2D const &transform) const {

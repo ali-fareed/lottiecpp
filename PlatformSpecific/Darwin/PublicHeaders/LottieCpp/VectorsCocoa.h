@@ -3,6 +3,7 @@
 
 #ifdef __cplusplus
 
+#include <LottieCpp/Vectors.h>
 #import <QuartzCore/QuartzCore.h>
 
 namespace lottie {
