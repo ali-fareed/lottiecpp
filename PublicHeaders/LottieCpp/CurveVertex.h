@@ -4,7 +4,6 @@
 #ifdef __cplusplus
 
 #include <LottieCpp/Vectors.h>
-#include <LottieCpp/CGPath.h>
 
 #include <math.h>
 
@@ -26,6 +25,8 @@ struct CurveVertexSplitResult {
     end(end_) {
     }
 };
+
+Vector2D transformVector(Vector2D const &v, Transform2D const &m);
 
 /// A single vertex with an in and out tangent
 struct __attribute__((packed)) CurveVertex {

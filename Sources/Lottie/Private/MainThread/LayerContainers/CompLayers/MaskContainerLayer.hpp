@@ -116,7 +116,7 @@ public:
             _properties.shape()->update(frame);
             _properties.expansion()->update(frame);
             
-            auto path = _properties.shape()->value().cgPath();
+            /*auto path = _properties.shape()->value().cgPath();
             auto usableMode = usableMaskMode(_properties.mode());
             if ((usableMode == MaskMode::Subtract && !_properties.inverted()) ||
                  (usableMode == MaskMode::Add && _properties.inverted())) {
@@ -126,7 +126,7 @@ public:
                 newPath->addPath(path);
                 path = std::static_pointer_cast<CGPath>(newPath);
             }
-            _maskLayer->setPath(path);
+            _maskLayer->setPath(path);*/
         }
     }
     

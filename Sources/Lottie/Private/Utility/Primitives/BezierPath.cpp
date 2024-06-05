@@ -107,7 +107,7 @@ lottiejson11::Json BezierPathContents::toJson() const {
     return lottiejson11::Json(result);
 }
 
-std::shared_ptr<CGPath> BezierPathContents::cgPath() const {
+/*std::shared_ptr<CGPath> BezierPathContents::cgPath() const {
     auto cgPath = CGPath::makePath();
     
     std::optional<PathElement> previousElement;
@@ -127,7 +127,7 @@ std::shared_ptr<CGPath> BezierPathContents::cgPath() const {
         cgPath->closeSubpath();
     }
     return cgPath;
-}
+}*/
 
 float BezierPathContents::length() {
     if (_length.has_value()) {
@@ -482,9 +482,9 @@ void BezierPath::setClosed(std::optional<bool> const &closed) {
     _contents->closed = closed;
 }
 
-std::shared_ptr<CGPath> BezierPath::cgPath() const {
+/*std::shared_ptr<CGPath> BezierPath::cgPath() const {
     return _contents->cgPath();
-}
+}*/
 
 BezierPath BezierPath::copyUsingTransform(Transform2D const &transform) const {
     if (transform == Transform2D::identity()) {

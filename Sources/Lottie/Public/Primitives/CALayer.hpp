@@ -39,10 +39,6 @@ public:
         return false;
     }
     
-    virtual std::shared_ptr<RenderableItem> renderableItem() {
-        return nullptr;
-    }
-    
     bool isHidden() const {
         return _isHidden;
     }
@@ -192,8 +188,6 @@ public:
     void setDashPattern(std::vector<float> const &dashPattern) {
         _dashPattern = dashPattern;
     }
-    
-    std::shared_ptr<RenderableItem> renderableItem() override;
     
 private:
     std::optional<Color> _strokeColor;

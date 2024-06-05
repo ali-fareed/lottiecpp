@@ -5,7 +5,6 @@
 
 #include <LottieCpp/CurveVertex.h>
 #include <LottieCpp/PathElement.h>
-#include <LottieCpp/CGPath.h>
 #include <LottieCpp/ShapeAttributes.h>
 
 #include <vector>
@@ -31,8 +30,6 @@ public:
     BezierPathContents& operator=(BezierPathContents&) = delete;
     
     lottiejson11::Json toJson() const;
-    
-    std::shared_ptr<CGPath> cgPath() const;
     
 public:
     std::vector<PathElement> elements;
@@ -121,7 +118,6 @@ public:
     std::vector<PathElement> &mutableElements();
     std::optional<bool> const &closed() const;
     void setClosed(std::optional<bool> const &closed);
-    std::shared_ptr<CGPath> cgPath() const;
     BezierPath copyUsingTransform(Transform2D const &transform) const;
     
 public:
