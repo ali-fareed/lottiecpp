@@ -16,7 +16,7 @@ class Impl;
 public:
     ~Renderer() = default;
     
-    static std::unique_ptr<Renderer> make(std::string const &jsonString);
+    static std::shared_ptr<Renderer> make(std::string const &jsonString);
     
 public:
     int frameCount();

@@ -48,7 +48,7 @@ Renderer::Renderer(std::shared_ptr<Impl> impl) :
 _impl(impl) {
 }
 
-std::unique_ptr<Renderer> Renderer::make(std::string const &jsonString) {
+std::shared_ptr<Renderer> Renderer::make(std::string const &jsonString) {
     std::string errorText;
     auto json = lottiejson11::Json::parse(jsonString, errorText);
     if (!json.is_object()) {
@@ -66,7 +66,7 @@ std::unique_ptr<Renderer> Renderer::make(std::string const &jsonString) {
     }
     
     auto impl = std::make_shared<Impl>(animation);
-    return std::unique_ptr<Renderer>(new Renderer(impl));
+    return std::shared_ptr<Renderer>(new Renderer(impl));
 }
 
 int Renderer::frameCount() {

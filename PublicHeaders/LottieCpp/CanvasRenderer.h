@@ -17,7 +17,7 @@ public:
     CanvasRenderer();
     ~CanvasRenderer() = default;
 
-    void render(std::shared_ptr<Canvas> canvas);
+    void render(std::shared_ptr<Renderer> renderer, std::shared_ptr<Canvas> canvas, Vector2D const &size);
 
 private:
     std::shared_ptr<Impl> _impl;
