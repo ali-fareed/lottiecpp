@@ -1,7 +1,8 @@
 #include <LottieCpp/BezierPath.h>
 
-#include <simd/simd.h>
+#if __APPLE__ && true
 #include <Accelerate/Accelerate.h>
+#endif
 
 #include "Lottie/Private/Parsing/JsonParsing.hpp"
 
@@ -515,6 +516,7 @@ BezierPathsBoundingBoxContext::~BezierPathsBoundingBoxContext() {
 }
 
 static CGRect calculateBoundingRectOpt(float const *pointsX, float const *pointsY, int count) {
+#if __APPLE__ && true
     float minX = 0.0;
     float maxX = 0.0;
     vDSP_minv(pointsX, 1, &minX, count);
@@ -526,6 +528,23 @@ static CGRect calculateBoundingRectOpt(float const *pointsX, float const *points
     vDSP_maxv(pointsY, 1, &maxY, count);
     
     return CGRect(minX, minY, maxX - minX, maxY - minY);
+#else
+    float minX = pointsX[0];
+    float maxX = pointsX[0];
+    for (int i = 0; i < count; i++) {
+        minX = std::min(minX, pointsX[i]);
+        maxX = std::max(maxX, pointsX[i]);
+    }
+    
+    float minY = pointsY[0];
+    float maxY = pointsY[0];
+    for (int i = 0; i < count; i++) {
+        minY = std::min(minY, pointsY[i]);
+        maxY = std::max(maxY, pointsY[i]);
+    }
+    
+    return CGRect(minX, minY, maxX - minX, maxY - minY);
+#endif
 }
 
 CGRect bezierPathsBoundingBoxParallel(BezierPathsBoundingBoxContext &context, std::vector<BezierPath> const &paths) {

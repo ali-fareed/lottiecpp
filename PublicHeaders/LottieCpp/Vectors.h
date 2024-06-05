@@ -7,8 +7,7 @@
 #include <math.h>
 
 #include <LottieCpp/lottiejson11.hpp>
-
-#import <simd/simd.h>
+#include <LottieCpp/LottieSimd.h>
 
 namespace lottie {
 
@@ -155,20 +154,20 @@ struct Transform2D {
         return _identity;
     }
     
-    explicit Transform2D(simd_float3x3 const &rows_) :
+    explicit Transform2D(LottieFloat3x3 const &rows_) :
     _rows(rows_) {
     }
     
     Transform2D operator*(Transform2D const &other) const {
-        return Transform2D(simd_mul(other._rows, _rows));
+        return Transform2D(lottieSimdMul(other._rows, _rows));
     }
     
     bool isInvertible() const {
-        return simd_determinant(_rows) > 0.00000001;
+        return lottieSimdDeterminant(_rows) > 0.00000001;
     }
     
     Transform2D inverted() const {
-        return Transform2D(simd_inverse(_rows));
+        return Transform2D(lottieSimdInverse(_rows));
     }
     
     bool isIdentity() const {
@@ -194,20 +193,20 @@ struct Transform2D {
     Transform2D skewed(float skew, float skewAxis) const;
     
     bool operator==(Transform2D const &rhs) const {
-        return simd_equal(_rows, rhs._rows);
+        return lottieSimdEqual(_rows, rhs._rows);
     }
     
     bool operator!=(Transform2D const &rhs) const {
         return !((*this) == rhs);
     }
     
-    simd_float3x3 const &rows() const {
+    LottieFloat3x3 const &rows() const {
         return _rows;
     }
 private:
     static Transform2D _identity;
     
-    simd_float3x3 _rows;
+    LottieFloat3x3 _rows;
 };
 
 struct CGRect {
