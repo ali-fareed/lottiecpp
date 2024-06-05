@@ -92,7 +92,7 @@ class MaskLayer: public CALayer {
 public:
     MaskLayer(std::shared_ptr<Mask> const &mask) :
     _properties(mask) {
-        _maskLayer = std::make_shared<CAShapeLayer>();
+        /*_maskLayer = std::make_shared<CAShapeLayer>();
         
         addSublayer(_maskLayer);
         
@@ -101,7 +101,7 @@ public:
         } else {
             _maskLayer->setFillColor(Color(0.0, 1.0, 0.0, 1.0));
         }
-        _maskLayer->setFillRule(FillRule::EvenOdd);
+        _maskLayer->setFillRule(FillRule::EvenOdd);*/
     }
     
     virtual ~MaskLayer() = default;
@@ -133,7 +133,7 @@ public:
 private:
     MaskNodeProperties _properties;
     
-    std::shared_ptr<CAShapeLayer> _maskLayer;
+    //std::shared_ptr<CAShapeLayer> _maskLayer;
 };
 
 class MaskContainerLayer: public CALayer {

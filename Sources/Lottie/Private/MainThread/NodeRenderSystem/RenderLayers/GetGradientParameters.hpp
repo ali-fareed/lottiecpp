@@ -1,8 +1,9 @@
 #ifndef ShapeRenderLayer_hpp
 #define ShapeRenderLayer_hpp
 
-#include "Lottie/Private/MainThread/NodeRenderSystem/Protocols/RenderNode.hpp"
+#include <LottieCpp/Color.h>
 #include "Lottie/Private/MainThread/NodeRenderSystem/Protocols/NodeOutput.hpp"
+#include "Lottie/Public/Primitives/GradientColorSet.hpp"
 
 namespace lottie {
 

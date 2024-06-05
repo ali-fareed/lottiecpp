@@ -1,5 +1,9 @@
 #include "GetGradientParameters.hpp"
 
+#include <LottieCpp/Color.h>
+#include "Lottie/Public/Keyframes/Interpolatable.hpp"
+#include "Lottie/Public/Keyframes/ValueInterpolators.hpp"
+
 namespace lottie {
 
 void getGradientParameters(int numberOfColors, GradientColorSet const &colors, std::vector<Color> &outColors, std::vector<float> &outLocations) {
