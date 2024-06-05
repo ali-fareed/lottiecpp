@@ -3,7 +3,6 @@
 
 #import <LottieCpp/Color.h>
 #include <LottieCpp/Vectors.h>
-#include <LottieCpp/CGPath.h>
 #include <LottieCpp/RenderTreeNode.h>
 #include "Lottie/Private/Model/ShapeItems/Fill.hpp"
 #include "Lottie/Private/Model/Layers/LayerModel.hpp"

@@ -33,13 +33,6 @@ public:
         _hasUpdate = hasUpdate;
     }
     
-    virtual std::shared_ptr<CGPath> outputPath() override {
-        if (_parent) {
-            return _parent->outputPath();
-        }
-        return nullptr;
-    }
-    
     virtual bool hasOutputUpdates(float forFrame) override {
         /// Changes to this node do not affect downstream nodes.
         bool parentUpdate = false;

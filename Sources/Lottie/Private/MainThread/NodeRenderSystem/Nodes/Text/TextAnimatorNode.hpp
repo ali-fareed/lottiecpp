@@ -295,10 +295,6 @@ public:
         return true;
     }
     
-    virtual std::shared_ptr<CGPath> outputPath() override {
-        return _outputPath;
-    }
-    
     virtual bool isEnabled() const override {
         return _isEnabled;
     }
@@ -309,8 +305,6 @@ public:
 private:
     std::shared_ptr<TextOutputNode> _parentTextNode;
     bool _isEnabled = true;
-    
-    std::shared_ptr<CGPath> _outputPath;
     
     std::optional<Transform2D> _xform;
     std::optional<float> _opacity;
