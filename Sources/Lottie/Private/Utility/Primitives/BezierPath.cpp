@@ -1,6 +1,6 @@
 #include <LottieCpp/BezierPath.h>
 
-#if __APPLE__ && true
+#if __APPLE__
 #include <Accelerate/Accelerate.h>
 #endif
 

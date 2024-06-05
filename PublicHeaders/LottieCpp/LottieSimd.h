@@ -12,6 +12,7 @@
 #define lottieSimdMakeFloat4 simd_make_float4
 #define lottieSimdMul simd_mul
 #define lottieSimdReduceMin simd_reduce_min
+#define lottieSimdReduceMax simd_reduce_max
 #define lottieSimdDeterminant simd_determinant
 #define lottieSimdInverse simd_inverse
 #define lottieSimdEqual simd_equal
@@ -22,6 +23,10 @@
 
 #ifndef MIN
 #define MIN(a,b) (a<b?a:b)
+#endif
+
+#ifndef MAX
+#define MAX(a,b) (a>b?a:b)
 #endif
 
 struct LottieFloat3 {
@@ -103,6 +108,14 @@ inline float lottieSimdReduceMin(LottieFloat4 value) {
     result = MIN(result, value.components[1]);
     result = MIN(result, value.components[2]);
     result = MIN(result, value.components[3]);
+    return result;
+}
+
+inline float lottieSimdReduceMax(LottieFloat4 value) {
+    float result = value.components[0];
+    result = MAX(result, value.components[1]);
+    result = MAX(result, value.components[2]);
+    result = MAX(result, value.components[3]);
     return result;
 }
 

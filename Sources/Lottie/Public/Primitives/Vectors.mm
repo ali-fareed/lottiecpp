@@ -569,8 +569,8 @@ CGRect CGRect::applyingTransform(Transform2D const &transform) const {
     
     float minX = lottieSimdReduceMin(lottieSimdMakeFloat4(topLeft.x, topRight.x, bottomLeft.x, bottomRight.x));
     float minY = lottieSimdReduceMin(lottieSimdMakeFloat4(topLeft.y, topRight.y, bottomLeft.y, bottomRight.y));
-    float maxX = lottieSimdReduceMin(lottieSimdMakeFloat4(topLeft.x, topRight.x, bottomLeft.x, bottomRight.x));
-    float maxY = lottieSimdReduceMin(lottieSimdMakeFloat4(topLeft.y, topRight.y, bottomLeft.y, bottomRight.y));
+    float maxX = lottieSimdReduceMax(lottieSimdMakeFloat4(topLeft.x, topRight.x, bottomLeft.x, bottomRight.x));
+    float maxY = lottieSimdReduceMax(lottieSimdMakeFloat4(topLeft.y, topRight.y, bottomLeft.y, bottomRight.y));
     
     return CGRect(minX, minY, maxX - minX, maxY - minY);
 }
