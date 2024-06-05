@@ -1,5 +1,4 @@
 #include <LottieCpp/Vectors.h>
-#include <LottieCpp/VectorsCocoa.h>
 
 #include "Lottie/Private/Parsing/JsonParsing.hpp"
 #include "Lottie/Public/Keyframes/Interpolatable.hpp"
