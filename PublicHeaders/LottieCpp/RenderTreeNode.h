@@ -153,8 +153,6 @@ public:
     std::vector<std::shared_ptr<RenderTreeNodeContentShadingVariant>> shadings;
     std::vector<std::shared_ptr<RenderTreeNodeContentItem>> subItems;
     int drawContentCount = 0;
-    
-    ProcessedRenderTreeNodeData renderData;
 };
 
 class RenderTreeNodeContentShadingVariant {
@@ -241,8 +239,6 @@ public:
     std::vector<std::shared_ptr<RenderTreeNode>> _subnodes;
     std::shared_ptr<RenderTreeNode> _mask;
     bool _invertMask = false;
-    
-    ProcessedRenderTreeNodeData renderData;
 };
 
 }

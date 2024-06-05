@@ -166,16 +166,6 @@ public:
         return std::nullopt;
     }
     
-    std::shared_ptr<CALayer> layerForKeypath(AnimationKeypath const &keyPath) {
-        assert(false);
-        /*for layer in animationLayers {
-            if let foundLayer = layer.layer(for: keypath) {
-                return foundLayer
-            }
-        }*/
-        return nullptr;
-    }
-    
     std::vector<std::shared_ptr<AnimatorNode>> animatorNodesForKeypath(AnimationKeypath const &keypath) {
         std::vector<std::shared_ptr<AnimatorNode>> results;
         /*for (const auto &layer : _animationLayers) {
@@ -252,9 +242,6 @@ public:
     }
     
 private:
-    // MARK: Internal
-    
-    /// The animatable Current Frame Property
     float _currentFrame = 0.0;
     
     std::shared_ptr<AnimationImageProvider> _imageProvider;
