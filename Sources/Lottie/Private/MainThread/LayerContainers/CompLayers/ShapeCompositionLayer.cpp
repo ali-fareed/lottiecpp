@@ -813,29 +813,37 @@ public:
             }
         }
         
-        bool update(AnimationFrameTime frameTime) {
+        bool update(AnimationFrameTime frameTime, bool &outHasTransformUpdate) {
             bool hasUpdates = false;
+            bool hasTransformUpdate = false;
             
             if (!hasValidData) {
                 hasUpdates = true;
+                hasTransformUpdate = true;
             }
             if (_anchor && _anchor->hasUpdate(frameTime)) {
                 hasUpdates = true;
+                hasTransformUpdate = true;
             }
             if (_position && _position->hasUpdate(frameTime)) {
                 hasUpdates = true;
+                hasTransformUpdate = true;
             }
             if (_scale && _scale->hasUpdate(frameTime)) {
                 hasUpdates = true;
+                hasTransformUpdate = true;
             }
             if (_rotation && _rotation->hasUpdate(frameTime)) {
                 hasUpdates = true;
+                hasTransformUpdate = true;
             }
             if (_skew && _skew->hasUpdate(frameTime)) {
                 hasUpdates = true;
+                hasTransformUpdate = true;
             }
             if (_skewAxis && _skewAxis->hasUpdate(frameTime)) {
                 hasUpdates = true;
+                hasTransformUpdate = true;
             }
             if (_opacity && _opacity->hasUpdate(frameTime)) {
                 hasUpdates = true;
@@ -885,6 +893,8 @@ public:
                 hasValidData = true;
             }
             
+            outHasTransformUpdate = hasTransformUpdate;
+            
             return hasUpdates;
         }
         
@@ -928,7 +938,8 @@ public:
         }
         
     private:
-        bool _needsContentsUpdate = true;
+        bool _isFrameInitialized = false;
+        
         std::optional<TrimParams> _effectiveTrim;
         
         std::unique_ptr<PathOutput> path;
@@ -1061,47 +1072,51 @@ public:
         
     public:
         bool updateFrame(AnimationFrameTime frameTime, std::optional<TrimParams> parentTrim, BezierPathsBoundingBoxContext &boundingBoxContext) {
-            bool hasUpdates = false;
+            bool hasPathUpdates = false;
+            if (_isFrameInitialized) {
+                _isFrameInitialized = true;
+                hasPathUpdates = true;
+            }
             
             if (_effectiveTrim != parentTrim) {
                 _effectiveTrim = parentTrim;
                 _contentItem->trimParams = _effectiveTrim;
-                hasUpdates = true;
+                hasPathUpdates = true;
             }
             
             if (transform) {
-                if (transform->update(frameTime)) {
+                bool hasTransformUpdate = false;
+                if (transform->update(frameTime, hasTransformUpdate)) {
                     _contentItem->transform = transform->transform();
                     _contentItem->alpha = transform->opacity();
-                    hasUpdates = true;
+                }
+                
+                if (hasTransformUpdate) {
+                    hasPathUpdates = true;
                 }
             }
             
             if (path) {
                 if (path->update(frameTime)) {
-                    hasUpdates = true;
+                    hasPathUpdates = true;
                 }
             }
             if (trim) {
                 if (trim->update(frameTime)) {
-                    hasUpdates = true;
+                    hasPathUpdates = true;
                 }
             }
             
             for (const auto &shadingVariant : shadings) {
                 if (shadingVariant.fill) {
-                    if (shadingVariant.fill->update(frameTime)) {
-                        hasUpdates = true;
-                    }
+                    shadingVariant.fill->update(frameTime);
                 }
                 if (shadingVariant.stroke) {
-                    if (shadingVariant.stroke->update(frameTime)) {
-                        hasUpdates = true;
-                    }
+                    shadingVariant.stroke->update(frameTime);
                 }
             }
             
-            bool hasChildrenUpdates = false;
+            bool hasChildrenPathUpdates = false;
             for (const auto &subItem : subItems) {
                 std::optional<TrimParams> childTrim = parentTrim;
                 if (trim) {
@@ -1109,27 +1124,17 @@ public:
                 }
                 
                 if (subItem->updateFrame(frameTime, childTrim, boundingBoxContext)) {
-                    hasChildrenUpdates = true;
+                    hasChildrenPathUpdates = true;
                 }
             }
             
             if (_effectiveTrim) {
-                if (hasChildrenUpdates) {
-                    hasUpdates = true;
+                if (hasChildrenPathUpdates) {
+                    hasPathUpdates = true;
                 }
             }
             
-            if (hasUpdates) {
-                _needsContentsUpdate = true;
-            }
-            
-            return hasUpdates;
-        }
-        
-        void updateContents() {
-            if (_needsContentsUpdate) {
-                _needsContentsUpdate = false;
-                
+            if (hasPathUpdates) {
                 if (_effectiveTrim) {
                     CompoundBezierPath compoundPath;
                     auto paths = collectPaths(INT32_MAX, Transform2D::identity(), true);
@@ -1148,11 +1153,7 @@ public:
                 }
             }
             
-            if (isGroup && !subItems.empty() && !_effectiveTrim) {
-                for (int i = (int)subItems.size() - 1; i >= 0; i--) {
-                    subItems[i]->updateContents();
-                }
-            }
+            return hasPathUpdates;
         }
     };
     
@@ -1332,7 +1333,6 @@ void ShapeCompositionLayer::displayContentsWithFrame(float frame, bool forceUpda
     _frameTime = frame;
     _frameTimeInitialized = true;
     _contentTree->itemTree->updateFrame(_frameTime, std::nullopt, boundingBoxContext);
-    _contentTree->itemTree->updateContents();
 }
 
 std::shared_ptr<RenderTreeNode> ShapeCompositionLayer::renderTreeNode(BezierPathsBoundingBoxContext &boundingBoxContext) {
@@ -1340,7 +1340,6 @@ std::shared_ptr<RenderTreeNode> ShapeCompositionLayer::renderTreeNode(BezierPath
         _frameTime = 0.0;
         _frameTimeInitialized = true;
         _contentTree->itemTree->updateFrame(_frameTime, std::nullopt, boundingBoxContext);
-        _contentTree->itemTree->updateContents();
     }
     
     if (!_renderTreeNode) {
