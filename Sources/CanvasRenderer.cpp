@@ -1,5 +1,7 @@
 #include <LottieCpp/CanvasRenderer.h>
 
+#include <cmath>
+
 namespace lottie {
 
 namespace {
