@@ -24,7 +24,7 @@ public:
         }
         ~FillOutput() = default;
         
-        virtual void update(AnimationFrameTime frameTime) = 0;
+        virtual bool update(AnimationFrameTime frameTime) = 0;
         virtual std::shared_ptr<RenderTreeNodeContentItem::Fill> fill() = 0;
     };
     
@@ -43,7 +43,7 @@ public:
         
         virtual ~SolidFillOutput() = default;
         
-        virtual void update(AnimationFrameTime frameTime) override {
+        virtual bool update(AnimationFrameTime frameTime) override {
             bool hasUpdates = false;
             
             if (color.hasUpdate(frameTime)) {
@@ -61,6 +61,8 @@ public:
                 solid->color = colorValue;
                 solid->opacity = opacityValue * 0.01;
             }
+            
+            return hasUpdates;
         }
         
         virtual std::shared_ptr<RenderTreeNodeContentItem::Fill> fill() override {
@@ -105,7 +107,7 @@ public:
         
         virtual ~GradientFillOutput() = default;
         
-        virtual void update(AnimationFrameTime frameTime) override {
+        virtual bool update(AnimationFrameTime frameTime) override {
             bool hasUpdates = false;
             
             if (colors.hasUpdate(frameTime)) {
@@ -140,6 +142,8 @@ public:
                 gradient->start = Vector2D(startPointValue.x, startPointValue.y);
                 gradient->end = Vector2D(endPointValue.x, endPointValue.y);
             }
+            
+            return hasUpdates;
         }
         
         virtual std::shared_ptr<RenderTreeNodeContentItem::Fill> fill() override {
@@ -172,7 +176,7 @@ public:
         }
         ~StrokeOutput() = default;
         
-        virtual void update(AnimationFrameTime frameTime) = 0;
+        virtual bool update(AnimationFrameTime frameTime) = 0;
         virtual std::shared_ptr<RenderTreeNodeContentItem::Stroke> stroke() = 0;
     };
     
@@ -208,7 +212,7 @@ public:
         
         virtual ~SolidStrokeOutput() = default;
         
-        virtual void update(AnimationFrameTime frameTime) override {
+        virtual bool update(AnimationFrameTime frameTime) override {
             bool hasUpdates = false;
             
             if (color.hasUpdate(frameTime)) {
@@ -259,6 +263,8 @@ public:
                 _stroke->dashPhase = hasNonZeroDashes ? dashPhaseValue : 0.0;
                 _stroke->dashPattern = hasNonZeroDashes ? dashPatternValue.values : std::vector<float>();
             }
+            
+            return hasUpdates;
         }
         
         virtual std::shared_ptr<RenderTreeNodeContentItem::Stroke> stroke() override {
@@ -331,7 +337,7 @@ public:
         
         virtual ~GradientStrokeOutput() = default;
         
-        virtual void update(AnimationFrameTime frameTime) override {
+        virtual bool update(AnimationFrameTime frameTime) override {
             bool hasUpdates = false;
             
             if (colors.hasUpdate(frameTime)) {
@@ -399,6 +405,8 @@ public:
                 _stroke->dashPhase = hasNonZeroDashes ? dashPhaseValue : 0.0;
                 _stroke->dashPattern = hasNonZeroDashes ? dashPatternValue.values : std::vector<float>();
             }
+            
+            return hasUpdates;
         }
         
         virtual std::shared_ptr<RenderTreeNodeContentItem::Stroke> stroke() override {
@@ -446,18 +454,25 @@ public:
         offset(trim.offset.keyframes) {
         }
         
-        void update(AnimationFrameTime frameTime) {
+        bool update(AnimationFrameTime frameTime) {
+            bool hasUpdates = false;
+            
             if (start.hasUpdate(frameTime)) {
+                hasUpdates = true;
                 startValue = start.value(frameTime).value;
             }
             
             if (end.hasUpdate(frameTime)) {
+                hasUpdates = true;
                 endValue = end.value(frameTime).value;
             }
             
             if (offset.hasUpdate(frameTime)) {
+                hasUpdates = true;
                 offsetValue = offset.value(frameTime).value;
             }
+            
+            return hasUpdates;
         }
         
         TrimParams trimParams() {
@@ -506,7 +521,7 @@ public:
         }
         virtual ~PathOutput() = default;
         
-        virtual void update(AnimationFrameTime frameTime) = 0;
+        virtual bool update(AnimationFrameTime frameTime) = 0;
         virtual std::shared_ptr<RenderTreeNodeContentPath> &currentPath() = 0;
     };
     
@@ -516,7 +531,8 @@ public:
         resolvedPath(std::make_shared<RenderTreeNodeContentPath>(path)) {
         }
         
-        virtual void update(AnimationFrameTime frameTime) override {
+        virtual bool update(AnimationFrameTime frameTime) override {
+            return false;
         }
         
         virtual std::shared_ptr<RenderTreeNodeContentPath> &currentPath() override {
@@ -534,12 +550,17 @@ public:
         resolvedPath(std::make_shared<RenderTreeNodeContentPath>(BezierPath())) {
         }
         
-        virtual void update(AnimationFrameTime frameTime) override {
+        virtual bool update(AnimationFrameTime frameTime) override {
+            bool hasUpdates = false;
+            
             if (!hasValidData || path.hasUpdate(frameTime)) {
+                hasUpdates = true;
                 path.update(frameTime, resolvedPath->path);
                 resolvedPath->needsBoundsRecalculation = true;
             }
             hasValidData = true;
+            
+            return hasUpdates;
         }
         
         virtual std::shared_ptr<RenderTreeNodeContentPath> &currentPath() override {
@@ -564,7 +585,7 @@ public:
         resolvedPath(std::make_shared<RenderTreeNodeContentPath>(BezierPath())) {
         }
         
-        virtual void update(AnimationFrameTime frameTime) override {
+        virtual bool update(AnimationFrameTime frameTime) override {
             bool hasUpdates = false;
             
             if (!hasValidData || position.hasUpdate(frameTime)) {
@@ -586,6 +607,8 @@ public:
             }
             
             hasValidData = true;
+            
+            return hasUpdates;
         }
         
         virtual std::shared_ptr<RenderTreeNodeContentPath> &currentPath() override {
@@ -618,7 +641,7 @@ public:
         resolvedPath(std::make_shared<RenderTreeNodeContentPath>(BezierPath())) {
         }
         
-        virtual void update(AnimationFrameTime frameTime) override {
+        virtual bool update(AnimationFrameTime frameTime) override {
             bool hasUpdates = false;
             
             if (!hasValidData || position.hasUpdate(frameTime)) {
@@ -636,6 +659,8 @@ public:
             }
             
             hasValidData = true;
+            
+            return hasUpdates;
         }
         
         virtual std::shared_ptr<RenderTreeNodeContentPath> &currentPath() override {
@@ -679,7 +704,7 @@ public:
             }
         }
         
-        virtual void update(AnimationFrameTime frameTime) override {
+        virtual bool update(AnimationFrameTime frameTime) override {
             bool hasUpdates = false;
             
             if (!hasValidData || position.hasUpdate(frameTime)) {
@@ -725,6 +750,8 @@ public:
             }
             
             hasValidData = true;
+            
+            return hasUpdates;
         }
         
         virtual std::shared_ptr<RenderTreeNodeContentPath> &currentPath() override {
@@ -786,7 +813,7 @@ public:
             }
         }
         
-        void update(AnimationFrameTime frameTime) {
+        bool update(AnimationFrameTime frameTime) {
             bool hasUpdates = false;
             
             if (!hasValidData) {
@@ -857,6 +884,8 @@ public:
                 
                 hasValidData = true;
             }
+            
+            return hasUpdates;
         }
         
         Transform2D const &transform() {
@@ -899,6 +928,9 @@ public:
         }
         
     private:
+        bool _needsContentsUpdate = true;
+        std::optional<TrimParams> _effectiveTrim;
+        
         std::unique_ptr<PathOutput> path;
         std::unique_ptr<TransformOutput> transform;
         
@@ -1020,57 +1052,68 @@ public:
         }
         
     public:
-        void updateFrame(AnimationFrameTime frameTime, BezierPathsBoundingBoxContext &boundingBoxContext) {
+        bool updateFrame(AnimationFrameTime frameTime, std::optional<TrimParams> parentTrim, BezierPathsBoundingBoxContext &boundingBoxContext) {
+            bool hasUpdates = false;
+            
+            if (_effectiveTrim != parentTrim) {
+                _effectiveTrim = parentTrim;
+                hasUpdates = true;
+            }
+            
             if (transform) {
-                transform->update(frameTime);
+                if (transform->update(frameTime)) {
+                    hasUpdates = true;
+                }
             }
             
             if (path) {
-                path->update(frameTime);
+                if (path->update(frameTime)) {
+                    hasUpdates = true;
+                }
             }
             if (trim) {
-                trim->update(frameTime);
+                if (trim->update(frameTime)) {
+                    hasUpdates = true;
+                }
             }
             
             for (const auto &shadingVariant : shadings) {
                 if (shadingVariant.fill) {
-                    shadingVariant.fill->update(frameTime);
+                    if (shadingVariant.fill->update(frameTime)) {
+                        hasUpdates = true;
+                    }
                 }
                 if (shadingVariant.stroke) {
-                    shadingVariant.stroke->update(frameTime);
+                    if (shadingVariant.stroke->update(frameTime)) {
+                        hasUpdates = true;
+                    }
                 }
             }
             
             for (const auto &subItem : subItems) {
-                subItem->updateFrame(frameTime, boundingBoxContext);
-            }
-        }
-        
-        bool hasTrims() {
-            if (trim) {
-                return true;
-            }
-            
-            for (const auto &subItem : subItems) {
-                if (subItem->hasTrims()) {
-                    return true;
+                std::optional<TrimParams> childTrim = parentTrim;
+                if (trim) {
+                    childTrim = trim->trimParams();
+                }
+                
+                if (subItem->updateFrame(frameTime, childTrim, boundingBoxContext)) {
+                    hasUpdates = true;
                 }
             }
             
-            return false;
-        }
-        
-        bool hasNestedTrims() {
-            for (const auto &subItem : subItems) {
-                if (subItem->hasTrims()) {
-                    return true;
-                }
+            if (hasUpdates) {
+                _needsContentsUpdate = true;
             }
             
-            return false;
+            return hasUpdates;
         }
         
-        void updateContents(std::optional<TrimParams> parentTrim) {
+        void updateContents() {
+            if (!_needsContentsUpdate) {
+                return;
+            }
+            _needsContentsUpdate = false;
+            
             Transform2D containerTransform = Transform2D::identity();
             float containerOpacity = 1.0;
             if (transform) {
@@ -1080,8 +1123,8 @@ public:
             _contentItem->transform = containerTransform;
             _contentItem->alpha = containerOpacity;
             
-            if (parentTrim) {
-                _contentItem->trimParams = parentTrim;
+            if (_effectiveTrim) {
+                _contentItem->trimParams = _effectiveTrim;
                 
                 CompoundBezierPath compoundPath;
                 auto paths = collectPaths(INT32_MAX, Transform2D::identity(), true);
@@ -1089,7 +1132,7 @@ public:
                     compoundPath.appendPath(path.path.copyUsingTransform(path.transform));
                 }
                 
-                compoundPath = trimCompoundPath(compoundPath, parentTrim->start, parentTrim->end, parentTrim->offset, parentTrim->type);
+                compoundPath = trimCompoundPath(compoundPath, _effectiveTrim->start, _effectiveTrim->end, _effectiveTrim->offset, _effectiveTrim->type);
                 
                 std::vector<BezierPath> resultPaths;
                 for (const auto &path : compoundPath.paths) {
@@ -1099,14 +1142,9 @@ public:
                 _contentItem->trimmedPaths = resultPaths;
             }
             
-            if (isGroup && !subItems.empty()) {
+            if (isGroup && !subItems.empty() && !_effectiveTrim) {
                 for (int i = (int)subItems.size() - 1; i >= 0; i--) {
-                    std::optional<TrimParams> childTrim = parentTrim;
-                    if (trim) {
-                        childTrim = trim->trimParams();
-                    }
-                    
-                    subItems[i]->updateContents(childTrim);
+                    subItems[i]->updateContents();
                 }
             }
         }
@@ -1287,16 +1325,16 @@ CompositionLayer(solidLayer, Vector2D::Zero()) {
 void ShapeCompositionLayer::displayContentsWithFrame(float frame, bool forceUpdates, BezierPathsBoundingBoxContext &boundingBoxContext) {
     _frameTime = frame;
     _frameTimeInitialized = true;
-    _contentTree->itemTree->updateFrame(_frameTime, boundingBoxContext);
-    _contentTree->itemTree->updateContents(std::nullopt);
+    _contentTree->itemTree->updateFrame(_frameTime, std::nullopt, boundingBoxContext);
+    _contentTree->itemTree->updateContents();
 }
 
 std::shared_ptr<RenderTreeNode> ShapeCompositionLayer::renderTreeNode(BezierPathsBoundingBoxContext &boundingBoxContext) {
     if (!_frameTimeInitialized) {
         _frameTime = 0.0;
         _frameTimeInitialized = true;
-        _contentTree->itemTree->updateFrame(_frameTime, boundingBoxContext);
-        _contentTree->itemTree->updateContents(std::nullopt);
+        _contentTree->itemTree->updateFrame(_frameTime, std::nullopt, boundingBoxContext);
+        _contentTree->itemTree->updateContents();
     }
     
     if (!_renderTreeNode) {

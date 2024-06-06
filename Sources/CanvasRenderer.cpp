@@ -235,7 +235,7 @@ static void drawLottieContentItem(std::shared_ptr<Canvas> const &parentContext, 
     
     for (const auto &shading : item->shadings) {
         CanvasPathEnumerator iteratePaths;
-        iteratePaths = [&](std::function<void(PathCommand const &)> iterate) {
+        iteratePaths = [&](std::function<void(PathCommand const &)> &&iterate) {
             enumeratePaths(item, shading->subItemLimit, Transform2D::identity(), true, [&](BezierPath const &sourcePath, Transform2D const &transform) {
                 auto path = sourcePath.copyUsingTransform(transform);
                 

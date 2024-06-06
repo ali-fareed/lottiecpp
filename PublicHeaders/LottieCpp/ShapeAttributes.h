@@ -48,6 +48,26 @@ struct TrimParams {
     offset(offset_),
     type(type_) {
     }
+    
+    bool operator==(TrimParams const &rhs) const {
+        if (start != rhs.start) {
+            return false;
+        }
+        if (end != rhs.end) {
+            return false;
+        }
+        if (offset != rhs.offset) {
+            return false;
+        }
+        if (type != rhs.type) {
+            return false;
+        }
+        return true;
+    }
+    
+    bool operator!=(TrimParams const &rhs) const {
+        return !(*this == rhs);
+    }
 };
 
 }

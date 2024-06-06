@@ -49,7 +49,7 @@ typedef struct {
     Vector2D points[4];
 } PathCommand;
 
-typedef std::function<void(std::function<void(PathCommand const &)>)> CanvasPathEnumerator;
+typedef std::function<void(std::function<void(PathCommand const &)> &&)> CanvasPathEnumerator;
 
 class Canvas {
 public:
