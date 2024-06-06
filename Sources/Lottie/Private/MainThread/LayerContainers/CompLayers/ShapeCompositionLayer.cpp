@@ -1010,7 +1010,7 @@ public:
         }
         
     public:
-        void initializeRenderChildren() {
+        void initializeRenderChildren(bool hasTrim) {
             _contentItem = std::make_shared<RenderTreeNodeContentItem>();
             _contentItem->isGroup = isGroup;
             
@@ -1044,9 +1044,17 @@ public:
             if (isGroup && !subItems.empty()) {
                 std::vector<std::shared_ptr<RenderTreeNode>> subItemNodes;
                 for (const auto &subItem : subItems) {
-                    subItem->initializeRenderChildren();
+                    bool childHasTrim = hasTrim;
+                    if (trim) {
+                        childHasTrim = true;
+                    }
+                    
+                    subItem->initializeRenderChildren(childHasTrim);
                     _contentItem->drawContentCount += subItem->_contentItem->drawContentCount;
-                    _contentItem->subItems.push_back(subItem->_contentItem);
+                    
+                    if (!hasTrim) {
+                        _contentItem->subItems.push_back(subItem->_contentItem);
+                    }
                 }
             }
         }
@@ -1057,11 +1065,14 @@ public:
             
             if (_effectiveTrim != parentTrim) {
                 _effectiveTrim = parentTrim;
+                _contentItem->trimParams = _effectiveTrim;
                 hasUpdates = true;
             }
             
             if (transform) {
                 if (transform->update(frameTime)) {
+                    _contentItem->transform = transform->transform();
+                    _contentItem->alpha = transform->opacity();
                     hasUpdates = true;
                 }
             }
@@ -1090,6 +1101,7 @@ public:
                 }
             }
             
+            bool hasChildrenUpdates = false;
             for (const auto &subItem : subItems) {
                 std::optional<TrimParams> childTrim = parentTrim;
                 if (trim) {
@@ -1097,6 +1109,12 @@ public:
                 }
                 
                 if (subItem->updateFrame(frameTime, childTrim, boundingBoxContext)) {
+                    hasChildrenUpdates = true;
+                }
+            }
+            
+            if (_effectiveTrim) {
+                if (hasChildrenUpdates) {
                     hasUpdates = true;
                 }
             }
@@ -1109,37 +1127,25 @@ public:
         }
         
         void updateContents() {
-            if (!_needsContentsUpdate) {
-                return;
-            }
-            _needsContentsUpdate = false;
-            
-            Transform2D containerTransform = Transform2D::identity();
-            float containerOpacity = 1.0;
-            if (transform) {
-                containerTransform = transform->transform();
-                containerOpacity = transform->opacity();
-            }
-            _contentItem->transform = containerTransform;
-            _contentItem->alpha = containerOpacity;
-            
-            if (_effectiveTrim) {
-                _contentItem->trimParams = _effectiveTrim;
+            if (_needsContentsUpdate) {
+                _needsContentsUpdate = false;
                 
-                CompoundBezierPath compoundPath;
-                auto paths = collectPaths(INT32_MAX, Transform2D::identity(), true);
-                for (const auto &path : paths) {
-                    compoundPath.appendPath(path.path.copyUsingTransform(path.transform));
+                if (_effectiveTrim) {
+                    CompoundBezierPath compoundPath;
+                    auto paths = collectPaths(INT32_MAX, Transform2D::identity(), true);
+                    for (const auto &path : paths) {
+                        compoundPath.appendPath(path.path.copyUsingTransform(path.transform));
+                    }
+                    
+                    compoundPath = trimCompoundPath(compoundPath, _effectiveTrim->start, _effectiveTrim->end, _effectiveTrim->offset, _effectiveTrim->type);
+                    
+                    std::vector<BezierPath> resultPaths;
+                    for (const auto &path : compoundPath.paths) {
+                        resultPaths.push_back(path);
+                    }
+                    
+                    _contentItem->trimmedPaths = resultPaths;
                 }
-                
-                compoundPath = trimCompoundPath(compoundPath, _effectiveTrim->start, _effectiveTrim->end, _effectiveTrim->offset, _effectiveTrim->type);
-                
-                std::vector<BezierPath> resultPaths;
-                for (const auto &path : compoundPath.paths) {
-                    resultPaths.push_back(path);
-                }
-                
-                _contentItem->trimmedPaths = resultPaths;
             }
             
             if (isGroup && !subItems.empty() && !_effectiveTrim) {
@@ -1305,7 +1311,7 @@ private:
             }
         }
         
-        itemTree->initializeRenderChildren();
+        itemTree->initializeRenderChildren(false);
     }
     
 public:

@@ -146,7 +146,7 @@ public:
 public:
     bool isGroup = false;
     Transform2D transform = Transform2D::identity();
-    float alpha = 0.0;
+    float alpha = 1.0;
     std::optional<TrimParams> trimParams;
     std::shared_ptr<RenderTreeNodeContentPath> path;
     std::optional<std::vector<BezierPath>> trimmedPaths;
