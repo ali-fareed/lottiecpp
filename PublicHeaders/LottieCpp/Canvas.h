@@ -15,7 +15,9 @@ public:
     Gradient(std::vector<Color> const &colors, std::vector<float> const &locations) :
     _colors(colors),
     _locations(locations) {
+#if DEBUG
         assert(_colors.size() == _locations.size());
+#endif
     }
     
     std::vector<Color> const &colors() const {

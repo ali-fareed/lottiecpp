@@ -63,7 +63,6 @@ public:
     virtual void addCurveTo(Vector2D const &point, Vector2D const &control1, Vector2D const &control2) = 0;
     virtual void moveTo(Vector2D const &point) = 0;
     virtual void closeSubpath() = 0;
-    virtual void addRect(CGRect const &rect) = 0;
     virtual void addPath(std::shared_ptr<CGPath> const &path) = 0;
     
     virtual void enumerate(std::function<void(CGPathItem const &)>) = 0;

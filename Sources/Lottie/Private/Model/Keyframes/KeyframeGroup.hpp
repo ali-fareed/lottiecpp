@@ -104,8 +104,6 @@ public:
     lottiejson11::Json::object toJson() const {
         lottiejson11::Json::object result;
         
-        assert(!keyframes.empty());
-        
         if (keyframes.size() == 1 && isSingle) {
             result.insert(std::make_pair("k", keyframes[0].value.toJson()));
         } else {

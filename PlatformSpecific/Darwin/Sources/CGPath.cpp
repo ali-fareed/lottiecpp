@@ -56,7 +56,6 @@ public:
     virtual void addCurveTo(Vector2D const &point, Vector2D const &control1, Vector2D const &control2) override;
     virtual void moveTo(Vector2D const &point) override;
     virtual void closeSubpath() override;
-    virtual void addRect(CGRect const &rect) override;
     virtual void addPath(std::shared_ptr<CGPath> const &path) override;
     virtual bool isEqual(CGPath *other) const override;
     virtual void enumerate(std::function<void(CGPathItem const &)>) override;
@@ -145,11 +144,6 @@ void CGPathImpl::moveTo(Vector2D const &point) {
 
 void CGPathImpl::closeSubpath() {
     _items.emplace_back(CGPathItem::Type::Close);
-}
-
-void CGPathImpl::addRect(CGRect const &rect) {
-    assert(false);
-    //CGPathAddRect(_path, nil, ::CGRectMake(rect.x, rect.y, rect.width, rect.height));
 }
 
 void CGPathImpl::addPath(std::shared_ptr<CGPath> const &path) {

@@ -1290,7 +1290,9 @@ private:
                     break;
                 }
                 case ShapeType::Repeater: {
+#if DEBUG
                     assert(false);
+#endif
                     break;
                 }
                 case ShapeType::Star: {

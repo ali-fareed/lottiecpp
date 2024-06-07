@@ -198,7 +198,9 @@ template<>
 struct ValueInterpolator<GradientColorSet> {
 public:
     static GradientColorSet interpolate(GradientColorSet const &value, GradientColorSet const &to, float amount, std::optional<Vector2D> spatialOutTangent, std::optional<Vector2D> spatialInTangent) {
+#if DEBUG
         assert(value.colors.size() == to.colors.size());
+#endif
         std::vector<float> colors;
         size_t colorCount = std::min(value.colors.size(), to.colors.size());
         for (size_t i = 0; i < colorCount; i++) {
@@ -212,7 +214,9 @@ template<>
 struct ValueInterpolator<DashPattern> {
 public:
     static DashPattern interpolate(DashPattern const &value, DashPattern const &to, float amount, std::optional<Vector2D> spatialOutTangent, std::optional<Vector2D> spatialInTangent) {
+#if DEBUG
         assert(value.values.size() == to.values.size());
+#endif
         std::vector<float> values;
         size_t colorCount = std::min(value.values.size(), to.values.size());
         for (size_t i = 0; i < colorCount; i++) {

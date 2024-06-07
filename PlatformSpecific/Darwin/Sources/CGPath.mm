@@ -128,10 +128,6 @@ void CGPathCocoaImpl::closeSubpath() {
     CGPathCloseSubpath(_path);
 }
 
-void CGPathCocoaImpl::addRect(CGRect const &rect) {
-    CGPathAddRect(_path, nil, ::CGRectMake(rect.x, rect.y, rect.width, rect.height));
-}
-
 void CGPathCocoaImpl::addPath(std::shared_ptr<CGPath> const &path) {
     if (CGPathIsEmpty(_path)) {
         _path = CGPathCreateMutableCopy(std::static_pointer_cast<CGPathCocoaImpl>(path)->_path);
