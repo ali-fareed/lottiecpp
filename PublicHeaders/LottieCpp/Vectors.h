@@ -268,8 +268,6 @@ inline bool isInRange(float value, float from, float to) {
     return from < value && value < to;
 }
 
-float cubicBezierInterpolate(float value, Vector2D const &P0, Vector2D const &P1, Vector2D const &P2, Vector2D const &P3);
-
 }
 
 #endif

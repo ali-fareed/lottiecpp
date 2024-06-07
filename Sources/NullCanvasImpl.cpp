@@ -5,8 +5,8 @@ namespace lottie {
 namespace {
 
 void addEnumeratedPath(CanvasPathEnumerator const &enumeratePath) {
-    enumeratePath([&](PathCommand const &command) {
-    });
+    //enumeratePath([&](PathCommand const &command) {
+    //});
 }
 
 }

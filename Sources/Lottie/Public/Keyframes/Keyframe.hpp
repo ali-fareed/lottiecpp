@@ -10,6 +10,8 @@
 
 namespace lottie {
 
+float cubicBezierInterpolate(float value, Vector2D const &P1, Vector2D const &P2);
+
 /// A keyframe with a single value, and timing information
 /// about when the value should be displayed and how it
 /// should be interpolated.
@@ -103,7 +105,7 @@ public:
         float progress = remapFloat(keyTime, startTime, endTime, 0.0f, 1.0f);
         if (!outTanPoint.isZero() || inTanPoint != Vector2D(1.0f, 1.0f)) {
             /// Cubic interpolation
-            progress = cubicBezierInterpolate(progress, Vector2D::Zero(), outTanPoint, inTanPoint, Vector2D(1.0, 1.0));
+            progress = cubicBezierInterpolate(progress, outTanPoint, inTanPoint);
         }
         return progress;
     }
