@@ -57,9 +57,6 @@ class Canvas {
 public:
     virtual ~Canvas() = default;
     
-    virtual int width() const = 0;
-    virtual int height() const = 0;
-    
     virtual std::shared_ptr<Canvas> makeLayer(int width, int height) = 0;
     
     virtual void saveState() = 0;
@@ -76,11 +73,12 @@ public:
     virtual void fill(CGRect const &rect, Color const &fillColor) = 0;
     virtual void setBlendMode(BlendMode blendMode) = 0;
     
-    virtual void setAlpha(float alpha) = 0;
-    
     virtual void concatenate(Transform2D const &transform) = 0;
     
-    virtual void draw(std::shared_ptr<Canvas> const &other, CGRect const &rect) = 0;
+    virtual void draw(std::shared_ptr<Canvas> const &other, float alpha, CGRect const &rect) = 0;
+    
+    virtual void pushLayer(CGRect const &rect) {};
+    virtual void popLayer() {};
 };
 
 }

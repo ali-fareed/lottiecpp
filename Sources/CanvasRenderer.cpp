@@ -6,8 +6,10 @@ namespace lottie {
 
 namespace {
 
+// Values below that are invisible
 static constexpr float minVisibleAlpha = 0.5f / 255.0f;
 
+// Sometimes calculating path bounds is slower than just allocating the whole canvas
 static constexpr float minGlobalRectCalculationSize = 200.0f;
 
 struct TransformedPath {
@@ -384,9 +386,7 @@ static void drawLottieContentItem(std::shared_ptr<Canvas> const &parentContext, 
         tempContext->restoreState();
         
         parentContext->concatenate(currentTransform.inverted());
-        parentContext->setAlpha(layerAlpha);
-        parentContext->draw(tempContext, globalRect.value());
-        parentContext->setAlpha(1.0);
+        parentContext->draw(tempContext, layerAlpha, globalRect.value());
     }
     
     parentContext->restoreState();
@@ -495,12 +495,11 @@ static void renderLottieRenderNode(std::shared_ptr<RenderTreeNode> node, std::sh
         
         if (maskContext) {
             tempContext->setBlendMode(BlendMode::DestinationIn);
-            tempContext->draw(maskContext, CGRect(globalRect->x, globalRect->y, globalRect->width, globalRect->height));
+            tempContext->draw(maskContext, 1.0f, CGRect(globalRect->x, globalRect->y, globalRect->width, globalRect->height));
         }
         
         parentContext->concatenate(currentTransform.inverted());
-        parentContext->setAlpha(layerAlpha);
-        parentContext->draw(tempContext, globalRect.value());
+        parentContext->draw(tempContext, layerAlpha, globalRect.value());
     }
     
     parentContext->restoreState();
