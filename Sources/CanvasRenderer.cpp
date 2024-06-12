@@ -227,7 +227,7 @@ static void drawLottieContentItem(std::shared_ptr<Canvas> const &canvas, std::sh
             return;
         }
         
-        canvas->pushLayer(globalRect.value(), layerAlpha, currentTransform);
+        canvas->pushLayer(globalRect.value(), layerAlpha, currentTransform, std::nullopt);
     }
     
     float renderAlpha = 1.0;
@@ -423,8 +423,6 @@ static void renderLottieRenderNode(std::shared_ptr<RenderTreeNode> node, std::sh
         needsTempContext = layerAlpha != 1.0 || masksToBounds;
     }
     
-    std::shared_ptr<Canvas> maskContext;
-    
     std::optional<CGRect> globalRect;
     if (needsTempContext) {
         if (configuration.canUseMoreMemory && globalSize.x <= minGlobalRectCalculationSize && globalSize.y <= minGlobalRectCalculationSize) {
@@ -437,23 +435,7 @@ static void renderLottieRenderNode(std::shared_ptr<RenderTreeNode> node, std::sh
             return;
         }
         
-        if ((node->mask() && !node->mask()->isHidden() && node->mask()->alpha() >= minVisibleAlpha) || masksToBounds) {
-            auto maskBackingStorage = canvas->makeLayer((int)(globalRect->width), (int)(globalRect->height));
-            
-            maskBackingStorage->concatenate(Transform2D::identity().translated(Vector2D(-globalRect->x, -globalRect->y)));
-            maskBackingStorage->concatenate(currentTransform);
-            
-            if (masksToBounds) {
-                maskBackingStorage->fill(CGRect(0.0f, 0.0f, node->size().x, node->size().y), Color(1.0f, 1.0f, 1.0f, 1.0f));
-            }
-            if (node->mask() && !node->mask()->isHidden() && node->mask()->alpha() >= minVisibleAlpha) {
-                renderLottieRenderNode(node->mask(), maskBackingStorage, globalSize, currentTransform, 1.0, node->invertMask(), bezierPathsBoundingBoxContext, configuration);
-            }
-            
-            maskContext = maskBackingStorage;
-        }
-        
-        canvas->pushLayer(globalRect.value(), layerAlpha, currentTransform);
+        canvas->pushLayer(globalRect.value(), layerAlpha, currentTransform, std::nullopt);
         // Will restore to this state when applying the mask over current contents
         canvas->saveState();
     }
@@ -481,7 +463,22 @@ static void renderLottieRenderNode(std::shared_ptr<RenderTreeNode> node, std::sh
     if (needsTempContext) {
         canvas->restoreState();
         
-        if (maskContext) {
+        if ((node->mask() && !node->mask()->isHidden() && node->mask()->alpha() >= minVisibleAlpha) || masksToBounds) {
+            std::shared_ptr<Canvas> maskContext;
+            auto maskBackingStorage = canvas->makeLayer((int)(globalRect->width), (int)(globalRect->height));
+            
+            maskBackingStorage->concatenate(Transform2D::identity().translated(Vector2D(-globalRect->x, -globalRect->y)));
+            maskBackingStorage->concatenate(currentTransform);
+            
+            if (masksToBounds) {
+                maskBackingStorage->fill(CGRect(0.0f, 0.0f, node->size().x, node->size().y), Color(1.0f, 1.0f, 1.0f, 1.0f));
+            }
+            if (node->mask() && !node->mask()->isHidden() && node->mask()->alpha() >= minVisibleAlpha) {
+                renderLottieRenderNode(node->mask(), maskBackingStorage, globalSize, currentTransform, 1.0, node->invertMask(), bezierPathsBoundingBoxContext, configuration);
+            }
+            
+            maskContext = maskBackingStorage;
+            
             canvas->concatenate(currentTransform.inverted());
             canvas->concatenate(Transform2D::identity().translated(Vector2D(globalRect->x, globalRect->y)));
             canvas->setBlendMode(BlendMode::DestinationIn);

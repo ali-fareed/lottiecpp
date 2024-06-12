@@ -55,6 +55,11 @@ typedef std::function<void(std::function<void(PathCommand const &)> &&)> CanvasP
 
 class Canvas {
 public:
+    enum class MaskMode {
+        Normal
+    };
+    
+public:
     virtual ~Canvas() = default;
     
     virtual std::shared_ptr<Canvas> makeLayer(int width, int height) = 0;
@@ -77,7 +82,7 @@ public:
     
     virtual void draw(std::shared_ptr<Canvas> const &other, float alpha, CGRect const &rect) = 0;
     
-    virtual void pushLayer(CGRect const &rect, float alpha, Transform2D const &transform) {};
+    virtual void pushLayer(CGRect const &rect, float alpha, Transform2D const &transform, std::optional<MaskMode> maskMode) {};
     virtual void popLayer() {};
 };
 
