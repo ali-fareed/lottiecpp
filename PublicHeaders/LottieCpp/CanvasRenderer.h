@@ -14,10 +14,15 @@ class CanvasRenderer {
 class Impl;
 
 public:
+struct Configuration {
+    bool canUseMoreMemory = false;
+};
+
+public:
     CanvasRenderer();
     ~CanvasRenderer() = default;
 
-    void render(std::shared_ptr<Renderer> renderer, std::shared_ptr<Canvas> canvas, Vector2D const &size);
+    void render(std::shared_ptr<Renderer> renderer, std::shared_ptr<Canvas> canvas, Vector2D const &size, Configuration const &configuration);
 
 private:
     std::shared_ptr<Impl> _impl;

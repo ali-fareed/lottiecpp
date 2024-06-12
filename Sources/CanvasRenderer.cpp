@@ -32,23 +32,38 @@ static CGRect collectPathBoundingBoxes(std::shared_ptr<RenderTreeNodeContentItem
     size_t maxSubitem = std::min(item->subItems.size(), subItemLimit);
     
     CGRect boundingBox(0.0, 0.0, 0.0, 0.0);
-    if (item->path) {
-        if (item->path->needsBoundsRecalculation) {
-            item->path->bounds = bezierPathsBoundingBoxParallel(bezierPathsBoundingBoxContext, item->path->path);
-            item->path->needsBoundsRecalculation = false;
+    if (item->trimmedPaths) {
+        for (const auto &path : item->trimmedPaths.value()) {
+            if (path->needsBoundsRecalculation) {
+                path->bounds = bezierPathsBoundingBoxParallel(bezierPathsBoundingBoxContext, path->path);
+                path->needsBoundsRecalculation = false;
+            }
+            CGRect subpathBoundingBox = path->bounds.applyingTransform(effectiveTransform);
+            if (boundingBox.empty()) {
+                boundingBox = subpathBoundingBox;
+            } else {
+                boundingBox = boundingBox.unionWith(subpathBoundingBox);
+            }
         }
-        boundingBox = item->path->bounds.applyingTransform(effectiveTransform);
-    }
-    
-    for (size_t i = 0; i < maxSubitem; i++) {
-        auto &subItem = item->subItems[i];
+    } else {
+        if (item->path) {
+            if (item->path->needsBoundsRecalculation) {
+                item->path->bounds = bezierPathsBoundingBoxParallel(bezierPathsBoundingBoxContext, item->path->path);
+                item->path->needsBoundsRecalculation = false;
+            }
+            boundingBox = item->path->bounds.applyingTransform(effectiveTransform);
+        }
         
-        CGRect subItemBoundingBox = collectPathBoundingBoxes(subItem, INT32_MAX, effectiveTransform, false, bezierPathsBoundingBoxContext);
-        
-        if (boundingBox.empty()) {
-            boundingBox = subItemBoundingBox;
-        } else {
-            boundingBox = boundingBox.unionWith(subItemBoundingBox);
+        for (size_t i = 0; i < maxSubitem; i++) {
+            auto &subItem = item->subItems[i];
+            
+            CGRect subItemBoundingBox = collectPathBoundingBoxes(subItem, INT32_MAX, effectiveTransform, false, bezierPathsBoundingBoxContext);
+            
+            if (boundingBox.empty()) {
+                boundingBox = subItemBoundingBox;
+            } else {
+                boundingBox = boundingBox.unionWith(subItemBoundingBox);
+            }
         }
     }
     
@@ -66,7 +81,7 @@ static void enumeratePaths(std::shared_ptr<RenderTreeNodeContentItem> item, size
     
     if (item->trimmedPaths) {
         for (const auto &path : item->trimmedPaths.value()) {
-            onPath(path, effectiveTransform);
+            onPath(path->path, effectiveTransform);
         }
         
         return;
@@ -182,7 +197,7 @@ static std::optional<CGRect> getRenderNodeGlobalRect(std::shared_ptr<RenderTreeN
 
 namespace {
 
-static void drawLottieContentItem(std::shared_ptr<Canvas> const &parentContext, std::shared_ptr<RenderTreeNodeContentItem> item, float parentAlpha, Vector2D const &globalSize, Transform2D const &parentTransform, BezierPathsBoundingBoxContext &bezierPathsBoundingBoxContext) {
+static void drawLottieContentItem(std::shared_ptr<Canvas> const &parentContext, std::shared_ptr<RenderTreeNodeContentItem> item, float parentAlpha, Vector2D const &globalSize, Transform2D const &parentTransform, BezierPathsBoundingBoxContext &bezierPathsBoundingBoxContext, CanvasRenderer::Configuration const &configuration) {
     auto currentTransform = parentTransform;
     Transform2D localTransform = item->transform;
     currentTransform = localTransform * currentTransform;
@@ -195,6 +210,7 @@ static void drawLottieContentItem(std::shared_ptr<Canvas> const &parentContext, 
     }
     
     parentContext->saveState();
+    parentContext->concatenate(item->transform);
     
     std::shared_ptr<Canvas> const *currentContext;
     std::shared_ptr<Canvas> tempContext;
@@ -204,7 +220,7 @@ static void drawLottieContentItem(std::shared_ptr<Canvas> const &parentContext, 
     
     std::optional<CGRect> globalRect;
     if (needsTempContext) {
-        if (globalSize.x <= minGlobalRectCalculationSize && globalSize.y <= minGlobalRectCalculationSize) {
+        if (configuration.canUseMoreMemory && globalSize.x <= minGlobalRectCalculationSize && globalSize.y <= minGlobalRectCalculationSize) {
             globalRect = CGRect(0.0, 0.0, globalSize.x, globalSize.y);
         } else {
             globalRect = getRenderContentItemGlobalRect(item, globalSize, parentTransform, bezierPathsBoundingBoxContext);
@@ -214,22 +230,14 @@ static void drawLottieContentItem(std::shared_ptr<Canvas> const &parentContext, 
             return;
         }
         
-        auto tempContextValue = parentContext->makeLayer((int)(globalRect->width), (int)(globalRect->height));
-        tempContext = tempContextValue;
-        
-        currentContext = &tempContext;
-        (*currentContext)->concatenate(Transform2D::identity().translated(Vector2D(-globalRect->x, -globalRect->y)));
-        
-        (*currentContext)->saveState();
-        (*currentContext)->concatenate(currentTransform);
+        currentContext = &parentContext;
+        (*currentContext)->pushLayer(globalRect.value(), layerAlpha, currentTransform);
     } else {
         currentContext = &parentContext;
     }
     
-    parentContext->concatenate(item->transform);
-    
     float renderAlpha = 1.0;
-    if (tempContext) {
+    if (needsTempContext) {
         renderAlpha = 1.0;
     } else {
         renderAlpha = layerAlpha;
@@ -379,20 +387,16 @@ static void drawLottieContentItem(std::shared_ptr<Canvas> const &parentContext, 
     
     for (auto it = item->subItems.rbegin(); it != item->subItems.rend(); it++) {
         const auto &subItem = *it;
-        drawLottieContentItem(*currentContext, subItem, renderAlpha, globalSize, currentTransform, bezierPathsBoundingBoxContext);
+        drawLottieContentItem(*currentContext, subItem, renderAlpha, globalSize, currentTransform, bezierPathsBoundingBoxContext, configuration);
     }
     
-    if (tempContext) {
-        tempContext->restoreState();
-        
-        parentContext->concatenate(currentTransform.inverted());
-        parentContext->draw(tempContext, layerAlpha, globalRect.value());
-    }
-    
+    if (needsTempContext) {
+        (*currentContext)->popLayer();
+    }    
     parentContext->restoreState();
 }
 
-static void renderLottieRenderNode(std::shared_ptr<RenderTreeNode> node, std::shared_ptr<Canvas> const &parentContext, Vector2D const &globalSize, Transform2D const &parentTransform, float parentAlpha, bool isInvertedMatte, BezierPathsBoundingBoxContext &bezierPathsBoundingBoxContext) {
+static void renderLottieRenderNode(std::shared_ptr<RenderTreeNode> node, std::shared_ptr<Canvas> const &parentContext, Vector2D const &globalSize, Transform2D const &parentTransform, float parentAlpha, bool isInvertedMatte, BezierPathsBoundingBoxContext &bezierPathsBoundingBoxContext, CanvasRenderer::Configuration const &configuration) {
     float normalizedOpacity = node->alpha();
     float layerAlpha = ((float)normalizedOpacity) * parentAlpha;
     
@@ -430,7 +434,7 @@ static void renderLottieRenderNode(std::shared_ptr<RenderTreeNode> node, std::sh
     
     std::optional<CGRect> globalRect;
     if (needsTempContext) {
-        if (globalSize.x <= minGlobalRectCalculationSize && globalSize.y <= minGlobalRectCalculationSize) {
+        if (configuration.canUseMoreMemory && globalSize.x <= minGlobalRectCalculationSize && globalSize.y <= minGlobalRectCalculationSize) {
             globalRect = CGRect(0.0, 0.0, globalSize.x, globalSize.y);
         } else {
             globalRect = getRenderNodeGlobalRect(node, globalSize, parentTransform, false, bezierPathsBoundingBoxContext);
@@ -450,7 +454,7 @@ static void renderLottieRenderNode(std::shared_ptr<RenderTreeNode> node, std::sh
                 maskBackingStorage->fill(CGRect(0.0f, 0.0f, node->size().x, node->size().y), Color(1.0f, 1.0f, 1.0f, 1.0f));
             }
             if (node->mask() && !node->mask()->isHidden() && node->mask()->alpha() >= minVisibleAlpha) {
-                renderLottieRenderNode(node->mask(), maskBackingStorage, globalSize, currentTransform, 1.0, node->invertMask(), bezierPathsBoundingBoxContext);
+                renderLottieRenderNode(node->mask(), maskBackingStorage, globalSize, currentTransform, 1.0, node->invertMask(), bezierPathsBoundingBoxContext, configuration);
             }
             
             maskContext = maskBackingStorage;
@@ -478,7 +482,7 @@ static void renderLottieRenderNode(std::shared_ptr<RenderTreeNode> node, std::sh
     }
     
     if (node->_contentItem) {
-        drawLottieContentItem(currentContext, node->_contentItem, renderAlpha, globalSize, currentTransform, bezierPathsBoundingBoxContext);
+        drawLottieContentItem(currentContext, node->_contentItem, renderAlpha, globalSize, currentTransform, bezierPathsBoundingBoxContext, configuration);
     }
     
     if (isInvertedMatte) {
@@ -487,7 +491,7 @@ static void renderLottieRenderNode(std::shared_ptr<RenderTreeNode> node, std::sh
     }
     
     for (const auto &subnode : node->subnodes()) {
-        renderLottieRenderNode(subnode, currentContext, globalSize, currentTransform, renderAlpha, false, bezierPathsBoundingBoxContext);
+        renderLottieRenderNode(subnode, currentContext, globalSize, currentTransform, renderAlpha, false, bezierPathsBoundingBoxContext, configuration);
     }
     
     if (tempContext) {
@@ -526,7 +530,7 @@ CanvasRenderer::CanvasRenderer() :
 _impl(std::make_shared<Impl>()) {
 }
 
-void CanvasRenderer::render(std::shared_ptr<Renderer> renderer, std::shared_ptr<Canvas> canvas, Vector2D const &size) {
+void CanvasRenderer::render(std::shared_ptr<Renderer> renderer, std::shared_ptr<Canvas> canvas, Vector2D const &size, CanvasRenderer::Configuration const &configuration) {
     std::shared_ptr<RenderTreeNode> renderNode = renderer->renderNode();
     if (!renderNode) {
         return;
@@ -537,7 +541,7 @@ void CanvasRenderer::render(std::shared_ptr<Renderer> renderer, std::shared_ptr<
     canvas->concatenate(Transform2D::makeScale(scale.x, scale.y));
     
     Transform2D rootTransform = Transform2D::identity().scaled(Vector2D(size.x / (float)renderer->size().x, size.y / (float)renderer->size().y));
-    renderLottieRenderNode(renderNode, canvas, size, rootTransform, 1.0, false, *_impl->bezierPathsBoundingBoxContext().get());
+    renderLottieRenderNode(renderNode, canvas, size, rootTransform, 1.0, false, *_impl->bezierPathsBoundingBoxContext().get(), configuration);
     
     canvas->restoreState();
 }

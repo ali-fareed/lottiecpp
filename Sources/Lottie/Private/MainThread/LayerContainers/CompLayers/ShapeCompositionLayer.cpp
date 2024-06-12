@@ -1144,9 +1144,9 @@ public:
                     
                     compoundPath = trimCompoundPath(compoundPath, _effectiveTrim->start, _effectiveTrim->end, _effectiveTrim->offset, _effectiveTrim->type);
                     
-                    std::vector<BezierPath> resultPaths;
+                    std::vector<std::shared_ptr<RenderTreeNodeContentPath>> resultPaths;
                     for (const auto &path : compoundPath.paths) {
-                        resultPaths.push_back(path);
+                        resultPaths.push_back(std::make_shared<RenderTreeNodeContentPath>(path));
                     }
                     
                     _contentItem->trimmedPaths = resultPaths;

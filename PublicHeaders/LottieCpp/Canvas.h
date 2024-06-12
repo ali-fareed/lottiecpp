@@ -77,7 +77,7 @@ public:
     
     virtual void draw(std::shared_ptr<Canvas> const &other, float alpha, CGRect const &rect) = 0;
     
-    virtual void pushLayer(CGRect const &rect) {};
+    virtual void pushLayer(CGRect const &rect, float alpha, Transform2D const &transform) {};
     virtual void popLayer() {};
 };
 

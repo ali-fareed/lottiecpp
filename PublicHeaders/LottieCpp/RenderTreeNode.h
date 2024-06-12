@@ -149,7 +149,7 @@ public:
     float alpha = 1.0;
     std::optional<TrimParams> trimParams;
     std::shared_ptr<RenderTreeNodeContentPath> path;
-    std::optional<std::vector<BezierPath>> trimmedPaths;
+    std::optional<std::vector<std::shared_ptr<RenderTreeNodeContentPath> > > trimmedPaths;
     std::vector<std::shared_ptr<RenderTreeNodeContentShadingVariant>> shadings;
     std::vector<std::shared_ptr<RenderTreeNodeContentItem>> subItems;
     int drawContentCount = 0;
