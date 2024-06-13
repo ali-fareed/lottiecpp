@@ -462,7 +462,7 @@ static void drawLottieContentItem(std::shared_ptr<Canvas> const &canvas, std::sh
     canvas->restoreState();
 }
 
-static void renderLottieRenderNode(std::shared_ptr<RenderTreeNode> node, std::shared_ptr<Canvas> const &canvas, Vector2D const &globalSize, Transform2D const &parentTransform, float parentAlpha, bool isInvertedMatte, BezierPathsBoundingBoxContext &bezierPathsBoundingBoxContext, CanvasRenderer::Configuration const &configuration) {
+static void renderLottieRenderNode(std::shared_ptr<RenderTreeNode> node, std::shared_ptr<Canvas> const &canvas, Vector2D const &globalSize, Transform2D const &parentTransform, float parentAlpha, BezierPathsBoundingBoxContext &bezierPathsBoundingBoxContext, CanvasRenderer::Configuration const &configuration) {
     float normalizedOpacity = node->alpha();
     float layerAlpha = ((float)normalizedOpacity) * parentAlpha;
     
@@ -495,6 +495,7 @@ static void renderLottieRenderNode(std::shared_ptr<RenderTreeNode> node, std::sh
         needsTempContext = layerAlpha != 1.0 || masksToBounds;
     }
     
+    std::optional<CGRect> localRect;
     std::optional<CGRect> globalRect;
     if (needsTempContext) {
         if (configuration.canUseMoreMemory && globalSize.x <= minGlobalRectCalculationSize && globalSize.y <= minGlobalRectCalculationSize) {
@@ -507,7 +508,6 @@ static void renderLottieRenderNode(std::shared_ptr<RenderTreeNode> node, std::sh
             return;
         }
         
-        std::optional<CGRect> localRect;
         if (configuration.canUseMoreMemory && globalSize.x <= minGlobalRectCalculationSize && globalSize.y <= minGlobalRectCalculationSize) {
             localRect = CGRect::veryLarge();
         } else {
@@ -538,26 +538,21 @@ static void renderLottieRenderNode(std::shared_ptr<RenderTreeNode> node, std::sh
         drawLottieContentItem(canvas, node->_contentItem, renderAlpha, globalSize, currentTransform, bezierPathsBoundingBoxContext, configuration);
     }
     
-    if (isInvertedMatte) {
-        canvas->fill(CGRect(0.0f, 0.0f, node->size().x, node->size().y), Color(0.0f, 0.0f, 0.0f, 1.0f));
-        canvas->setBlendMode(BlendMode::DestinationOut);
-    }
-    
     for (const auto &subnode : node->subnodes()) {
-        renderLottieRenderNode(subnode, canvas, globalSize, currentTransform, renderAlpha, false, bezierPathsBoundingBoxContext, configuration);
+        renderLottieRenderNode(subnode, canvas, globalSize, currentTransform, renderAlpha, bezierPathsBoundingBoxContext, configuration);
     }
     
     if (needsTempContext) {
         canvas->restoreState();
         
         if ((node->mask() && !node->mask()->isHidden() && node->mask()->alpha() >= minVisibleAlpha) || masksToBounds) {
-            canvas->pushLayer(globalRect.value(), 1.0, currentTransform, lottie::Canvas::MaskMode::Normal, false);
+            canvas->pushLayer(globalRect.value(), 1.0, currentTransform, node->invertMask() ? lottie::Canvas::MaskMode::Inverse : lottie::Canvas::MaskMode::Normal, false);
             
             if (masksToBounds) {
                 canvas->fill(CGRect(0.0f, 0.0f, node->size().x, node->size().y), Color(1.0f, 1.0f, 1.0f, 1.0f));
             }
             if (node->mask() && !node->mask()->isHidden() && node->mask()->alpha() >= minVisibleAlpha) {
-                renderLottieRenderNode(node->mask(), canvas, globalSize, currentTransform, 1.0, node->invertMask(), bezierPathsBoundingBoxContext, configuration);
+                renderLottieRenderNode(node->mask(), canvas, globalSize, currentTransform, 1.0, bezierPathsBoundingBoxContext, configuration);
             }
             
             canvas->popLayer();
@@ -600,7 +595,7 @@ void CanvasRenderer::render(std::shared_ptr<Renderer> renderer, std::shared_ptr<
     canvas->concatenate(Transform2D::makeScale(scale.x, scale.y));
     
     Transform2D rootTransform = Transform2D::identity().scaled(Vector2D(size.x / (float)renderer->size().x, size.y / (float)renderer->size().y));
-    renderLottieRenderNode(renderNode, canvas, size, rootTransform, 1.0, false, *_impl->bezierPathsBoundingBoxContext().get(), configuration);
+    renderLottieRenderNode(renderNode, canvas, size, rootTransform, 1.0, *_impl->bezierPathsBoundingBoxContext().get(), configuration);
     
     canvas->restoreState();
 }

@@ -33,12 +33,6 @@ private:
     std::vector<float> _locations;
 };
 
-enum class BlendMode {
-    Normal,
-    DestinationIn,
-    DestinationOut
-};
-
 enum class PathCommandType {
     MoveTo,
     LineTo,
@@ -56,7 +50,8 @@ typedef std::function<void(std::function<void(PathCommand const &)> &&)> CanvasP
 class Canvas {
 public:
     enum class MaskMode {
-        Normal
+        Normal,
+        Inverse
     };
     
 public:
@@ -74,7 +69,6 @@ public:
     virtual void radialGradientStrokePath(CanvasPathEnumerator const &enumeratePath, float lineWidth, LineJoin lineJoin, LineCap lineCap, float dashPhase, std::vector<float> const &dashPattern, Gradient const &gradient, Vector2D const &startCenter, float startRadius, Vector2D const &endCenter, float endRadius) = 0;
     
     virtual void fill(CGRect const &rect, Color const &fillColor) = 0;
-    virtual void setBlendMode(BlendMode blendMode) = 0;
     
     virtual void concatenate(Transform2D const &transform) = 0;
     

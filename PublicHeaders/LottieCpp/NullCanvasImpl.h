@@ -23,8 +23,6 @@ public:
     virtual void radialGradientStrokePath(CanvasPathEnumerator const &enumeratePath, float lineWidth, lottie::LineJoin lineJoin, lottie::LineCap lineCap, float dashPhase, std::vector<float> const &dashPattern, Gradient const &gradient, lottie::Vector2D const &startCenter, float startRadius, lottie::Vector2D const &endCenter, float endRadius) override;
     virtual void fill(lottie::CGRect const &rect, lottie::Color const &fillColor) override;
     
-    virtual void setBlendMode(BlendMode blendMode) override;
-    
     virtual void concatenate(lottie::Transform2D const &transform) override;
     
     void flush();
