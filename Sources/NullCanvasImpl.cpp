@@ -48,9 +48,6 @@ void NullCanvasImpl::radialGradientStrokePath(CanvasPathEnumerator const &enumer
     addEnumeratedPath(enumeratePath);
 }
 
-void NullCanvasImpl::fill(lottie::CGRect const &rect, lottie::Color const &fillColor) {
-}
-
 void NullCanvasImpl::concatenate(lottie::Transform2D const &transform) {
 }
 

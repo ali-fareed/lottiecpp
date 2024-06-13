@@ -32,7 +32,7 @@ public:
     }
     
     void setFrame(int index) {
-        _layer->setCurrentFrame(index);
+        _layer->setCurrentFrame(_animation->startFrame + index);
     }
     
     std::shared_ptr<RenderTreeNode> renderNode() {

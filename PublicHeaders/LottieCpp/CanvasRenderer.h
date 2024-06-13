@@ -16,6 +16,7 @@ class Impl;
 public:
 struct Configuration {
     bool canUseMoreMemory = false;
+    bool disableGroupTransparency = false;
 };
 
 public:

@@ -68,7 +68,7 @@ public:
     virtual void linearGradientStrokePath(CanvasPathEnumerator const &enumeratePath, float lineWidth, LineJoin lineJoin, LineCap lineCap, float dashPhase, std::vector<float> const &dashPattern, Gradient const &gradient, Vector2D const &start, Vector2D const &end) = 0;
     virtual void radialGradientStrokePath(CanvasPathEnumerator const &enumeratePath, float lineWidth, LineJoin lineJoin, LineCap lineCap, float dashPhase, std::vector<float> const &dashPattern, Gradient const &gradient, Vector2D const &startCenter, float startRadius, Vector2D const &endCenter, float endRadius) = 0;
     
-    virtual void fill(CGRect const &rect, Color const &fillColor) = 0;
+    virtual void clip(CGRect const &rect) {}
     
     virtual void concatenate(Transform2D const &transform) = 0;
     

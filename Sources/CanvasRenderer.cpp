@@ -187,7 +187,9 @@ static void drawLottieContentItem(std::shared_ptr<Canvas> const &canvas, std::sh
     canvas->concatenate(item->transform);
     
     bool needsTempContext = false;
-    needsTempContext = layerAlpha != 1.0 && item->drawContentCount > 1;
+    if (!configuration.disableGroupTransparency) {
+        needsTempContext = layerAlpha != 1.0 && item->drawContentCount > 1;
+    }
     
     if (needsTempContext) {
         std::optional<CGRect> localRect;
@@ -393,11 +395,17 @@ static void renderLottieRenderNode(std::shared_ptr<RenderTreeNode> node, std::sh
     canvas->saveState();
     canvas->concatenate(node->transform());
     
+    if (masksToBounds) {
+        canvas->clip(lottie::CGRect(0.0f, 0.0f, node->size().x, node->size().y));
+    }
+    
     bool needsTempContext = false;
     if (node->mask() && !node->mask()->isHidden() && node->mask()->alpha() >= minVisibleAlpha) {
         needsTempContext = true;
     } else {
-        needsTempContext = layerAlpha != 1.0 || masksToBounds;
+        if (layerAlpha != 1.0 && node->drawContentCount > 1 && !configuration.disableGroupTransparency) {
+            needsTempContext = true;
+        }
     }
     
     std::optional<CGRect> localRect;
@@ -439,12 +447,9 @@ static void renderLottieRenderNode(std::shared_ptr<RenderTreeNode> node, std::sh
     if (needsTempContext) {
         canvas->restoreState();
         
-        if ((node->mask() && !node->mask()->isHidden() && node->mask()->alpha() >= minVisibleAlpha) || masksToBounds) {
+        if ((node->mask() && !node->mask()->isHidden() && node->mask()->alpha() >= minVisibleAlpha)) {
             canvas->pushLayer(localRect.value(), 1.0, node->invertMask() ? lottie::Canvas::MaskMode::Inverse : lottie::Canvas::MaskMode::Normal);
             
-            if (masksToBounds) {
-                canvas->fill(CGRect(0.0f, 0.0f, node->size().x, node->size().y), Color(1.0f, 1.0f, 1.0f, 1.0f));
-            }
             if (node->mask() && !node->mask()->isHidden() && node->mask()->alpha() >= minVisibleAlpha) {
                 renderLottieRenderNode(node->mask(), canvas, globalSize, currentTransform, 1.0, bezierPathsBoundingBoxContext, configuration);
             }
