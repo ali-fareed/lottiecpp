@@ -62,14 +62,12 @@ public:
 public:
     virtual ~Canvas() = default;
     
-    virtual std::shared_ptr<Canvas> makeLayer(int width, int height) = 0;
-    
     virtual void saveState() = 0;
     virtual void restoreState() = 0;
     
     virtual void fillPath(CanvasPathEnumerator const &enumeratePath, FillRule fillRule, Color const &color) = 0;
     virtual void linearGradientFillPath(CanvasPathEnumerator const &enumeratePath, FillRule fillRule, Gradient const &gradient, Vector2D const &start, Vector2D const &end) = 0;
-    virtual void radialGradientFillPath(CanvasPathEnumerator const &enumeratePath, FillRule fillRule, Gradient const &gradient, Vector2D const &startCenter, float startRadius, Vector2D const &endCenter, float endRadius) = 0;
+    virtual void radialGradientFillPath(CanvasPathEnumerator const &enumeratePath, FillRule fillRule, Gradient const &gradient, Vector2D const &center, float radius) = 0;
     
     virtual void strokePath(CanvasPathEnumerator const &enumeratePath, float lineWidth, LineJoin lineJoin, LineCap lineCap, float dashPhase, std::vector<float> const &dashPattern, Color const &color) = 0;
     virtual void linearGradientStrokePath(CanvasPathEnumerator const &enumeratePath, float lineWidth, LineJoin lineJoin, LineCap lineCap, float dashPhase, std::vector<float> const &dashPattern, Gradient const &gradient, Vector2D const &start, Vector2D const &end) = 0;
@@ -79,8 +77,6 @@ public:
     virtual void setBlendMode(BlendMode blendMode) = 0;
     
     virtual void concatenate(Transform2D const &transform) = 0;
-    
-    virtual void draw(std::shared_ptr<Canvas> const &other, float alpha, CGRect const &rect) = 0;
     
     virtual void pushLayer(CGRect const &rect, float alpha, Transform2D const &transform, std::optional<MaskMode> maskMode) {};
     virtual void popLayer() {};

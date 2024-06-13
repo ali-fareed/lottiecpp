@@ -367,7 +367,7 @@ static void drawLottieContentItem(std::shared_ptr<Canvas> const &canvas, std::sh
                             break;
                         }
                         case GradientType::Radial: {
-                            canvas->radialGradientFillPath(iteratePaths, rule, gradient, start, 0.0, start, start.distanceTo(end));
+                            canvas->radialGradientFillPath(iteratePaths, rule, gradient, start, start.distanceTo(end));
                             break;
                         }
                         default: {
@@ -464,25 +464,16 @@ static void renderLottieRenderNode(std::shared_ptr<RenderTreeNode> node, std::sh
         canvas->restoreState();
         
         if ((node->mask() && !node->mask()->isHidden() && node->mask()->alpha() >= minVisibleAlpha) || masksToBounds) {
-            std::shared_ptr<Canvas> maskContext;
-            auto maskBackingStorage = canvas->makeLayer((int)(globalRect->width), (int)(globalRect->height));
-            
-            maskBackingStorage->concatenate(Transform2D::identity().translated(Vector2D(-globalRect->x, -globalRect->y)));
-            maskBackingStorage->concatenate(currentTransform);
+            canvas->pushLayer(globalRect.value(), 1.0, currentTransform, lottie::Canvas::MaskMode::Normal);
             
             if (masksToBounds) {
-                maskBackingStorage->fill(CGRect(0.0f, 0.0f, node->size().x, node->size().y), Color(1.0f, 1.0f, 1.0f, 1.0f));
+                canvas->fill(CGRect(0.0f, 0.0f, node->size().x, node->size().y), Color(1.0f, 1.0f, 1.0f, 1.0f));
             }
             if (node->mask() && !node->mask()->isHidden() && node->mask()->alpha() >= minVisibleAlpha) {
-                renderLottieRenderNode(node->mask(), maskBackingStorage, globalSize, currentTransform, 1.0, node->invertMask(), bezierPathsBoundingBoxContext, configuration);
+                renderLottieRenderNode(node->mask(), canvas, globalSize, currentTransform, 1.0, node->invertMask(), bezierPathsBoundingBoxContext, configuration);
             }
             
-            maskContext = maskBackingStorage;
-            
-            canvas->concatenate(currentTransform.inverted());
-            canvas->concatenate(Transform2D::identity().translated(Vector2D(globalRect->x, globalRect->y)));
-            canvas->setBlendMode(BlendMode::DestinationIn);
-            canvas->draw(maskContext, 1.0f, CGRect(0.0, 0.0, globalRect->width, globalRect->height));
+            canvas->popLayer();
         }
         canvas->popLayer();
     }

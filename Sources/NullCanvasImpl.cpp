@@ -18,10 +18,6 @@ _transform(lottie::Transform2D::identity()) {
 NullCanvasImpl::~NullCanvasImpl() {
 }
 
-std::shared_ptr<Canvas> NullCanvasImpl::makeLayer(int width, int height) {
-    return std::make_shared<NullCanvasImpl>(width, height);
-}
-
 void NullCanvasImpl::saveState() {
 }
 
@@ -36,7 +32,7 @@ void NullCanvasImpl::linearGradientFillPath(CanvasPathEnumerator const &enumerat
     addEnumeratedPath(enumeratePath);
 }
 
-void NullCanvasImpl::radialGradientFillPath(CanvasPathEnumerator const &enumeratePath, lottie::FillRule fillRule, Gradient const &gradient, lottie::Vector2D const &startCenter, float startRadius, lottie::Vector2D const &endCenter, float endRadius) {
+void NullCanvasImpl::radialGradientFillPath(CanvasPathEnumerator const &enumeratePath, lottie::FillRule fillRule, Gradient const &gradient, Vector2D const &center, float radius) {
     addEnumeratedPath(enumeratePath);
 }
 
@@ -59,9 +55,6 @@ void NullCanvasImpl::setBlendMode(BlendMode blendMode) {
 }
 
 void NullCanvasImpl::concatenate(lottie::Transform2D const &transform) {
-}
-
-void NullCanvasImpl::draw(std::shared_ptr<Canvas> const &other, float alpha, lottie::CGRect const &rect) {
 }
 
 void NullCanvasImpl::flush() {
