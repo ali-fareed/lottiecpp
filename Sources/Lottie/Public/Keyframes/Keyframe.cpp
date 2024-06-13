@@ -1,7 +1,7 @@
 #include "Keyframe.hpp"
 
 #include <cfloat>
-#include <math.h>
+#include <cmath>
 #include <algorithm>
 
 namespace lottie {
