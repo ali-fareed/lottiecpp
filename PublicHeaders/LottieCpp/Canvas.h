@@ -78,7 +78,7 @@ public:
     
     virtual void concatenate(Transform2D const &transform) = 0;
     
-    virtual void pushLayer(CGRect const &rect, float alpha, Transform2D const &transform, std::optional<MaskMode> maskMode) {};
+    virtual bool pushLayer(CGRect const &rect, float alpha, Transform2D const &transform, std::optional<MaskMode> maskMode, bool isPostTransform) { return true; };
     virtual void popLayer() {};
 };
 

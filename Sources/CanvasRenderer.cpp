@@ -148,6 +148,41 @@ static std::optional<CGRect> getRenderContentItemGlobalRect(std::shared_ptr<Rend
     }
 }
 
+static std::optional<CGRect> getRenderContentItemLocalRect(std::shared_ptr<RenderTreeNodeContentItem> const &contentItem, BezierPathsBoundingBoxContext &bezierPathsBoundingBoxContext) {
+    std::optional<CGRect> localRect;
+    for (const auto &shadingVariant : contentItem->shadings) {
+        CGRect shapeBounds = collectPathBoundingBoxes(contentItem, shadingVariant->subItemLimit, Transform2D::identity(), true, bezierPathsBoundingBoxContext);
+        
+        if (shadingVariant->stroke) {
+            shapeBounds = shapeBounds.insetBy(-shadingVariant->stroke->lineWidth / 2.0, -shadingVariant->stroke->lineWidth / 2.0);
+        } else if (shadingVariant->fill) {
+        } else {
+            continue;
+        }
+        
+        CGRect shapeLocalBounds = shapeBounds;
+        if (localRect) {
+            localRect = localRect->unionWith(shapeLocalBounds);
+        } else {
+            localRect = shapeLocalBounds;
+        }
+    }
+    
+    for (const auto &subItem : contentItem->subItems) {
+        auto subLocalRect = getRenderContentItemLocalRect(subItem, bezierPathsBoundingBoxContext);
+        if (subLocalRect) {
+            CGRect transformedSubLocalRect = subLocalRect->applyingTransform(subItem->transform);
+            if (localRect) {
+                localRect = localRect->unionWith(transformedSubLocalRect);
+            } else {
+                localRect = transformedSubLocalRect;
+            }
+        }
+    }
+    
+    return localRect;
+}
+
 static std::optional<CGRect> getRenderNodeGlobalRect(std::shared_ptr<RenderTreeNode> const &node, Vector2D const &globalSize, Transform2D const &parentTransform, bool isInvertedMatte, BezierPathsBoundingBoxContext &bezierPathsBoundingBoxContext) {
     if (node->isHidden() || node->alpha() < minVisibleAlpha) {
         return std::nullopt;
@@ -195,6 +230,40 @@ static std::optional<CGRect> getRenderNodeGlobalRect(std::shared_ptr<RenderTreeN
     }
 }
 
+static std::optional<CGRect> getRenderNodeLocalRect(std::shared_ptr<RenderTreeNode> const &node, bool isInvertedMatte, BezierPathsBoundingBoxContext &bezierPathsBoundingBoxContext) {
+    if (node->isHidden() || node->alpha() < minVisibleAlpha) {
+        return std::nullopt;
+    }
+    
+    std::optional<CGRect> localRect;
+    if (node->_contentItem) {
+        localRect = getRenderContentItemLocalRect(node->_contentItem, bezierPathsBoundingBoxContext);
+    }
+    
+    if (isInvertedMatte) {
+        CGRect localBounds = CGRect(0.0f, 0.0f, node->size().x, node->size().y);
+        if (localRect) {
+            localRect = localRect->unionWith(localBounds);
+        } else {
+            localRect = localBounds;
+        }
+    }
+    
+    for (const auto &subNode : node->subnodes()) {
+        auto subLocalRect = getRenderNodeLocalRect(subNode, false, bezierPathsBoundingBoxContext);
+        if (subLocalRect) {
+            auto transformedSubLocalRect = subLocalRect->applyingTransform(subNode->transform());
+            if (localRect) {
+                localRect = localRect->unionWith(transformedSubLocalRect);
+            } else {
+                localRect = transformedSubLocalRect;
+            }
+        }
+    }
+    
+    return localRect;
+}
+
 namespace {
 
 static void drawLottieContentItem(std::shared_ptr<Canvas> const &canvas, std::shared_ptr<RenderTreeNodeContentItem> item, float parentAlpha, Vector2D const &globalSize, Transform2D const &parentTransform, BezierPathsBoundingBoxContext &bezierPathsBoundingBoxContext, CanvasRenderer::Configuration const &configuration) {
@@ -215,19 +284,22 @@ static void drawLottieContentItem(std::shared_ptr<Canvas> const &canvas, std::sh
     bool needsTempContext = false;
     needsTempContext = layerAlpha != 1.0 && item->drawContentCount > 1;
     
-    std::optional<CGRect> globalRect;
     if (needsTempContext) {
+        std::optional<CGRect> localRect;
         if (configuration.canUseMoreMemory && globalSize.x <= minGlobalRectCalculationSize && globalSize.y <= minGlobalRectCalculationSize) {
-            globalRect = CGRect(0.0, 0.0, globalSize.x, globalSize.y);
+            localRect = CGRect::veryLarge();
         } else {
-            globalRect = getRenderContentItemGlobalRect(item, globalSize, parentTransform, bezierPathsBoundingBoxContext);
+            localRect = getRenderContentItemLocalRect(item, bezierPathsBoundingBoxContext);
         }
-        if (!globalRect || globalRect->width <= 0.0f || globalRect->height <= 0.0f) {
+        
+        if (!localRect) {
             canvas->restoreState();
             return;
         }
-        
-        canvas->pushLayer(globalRect.value(), layerAlpha, currentTransform, std::nullopt);
+        if (!canvas->pushLayer(localRect.value(), layerAlpha, currentTransform, std::nullopt, true)) {
+            canvas->restoreState();
+            return;
+        }
     }
     
     float renderAlpha = 1.0;
@@ -435,7 +507,22 @@ static void renderLottieRenderNode(std::shared_ptr<RenderTreeNode> node, std::sh
             return;
         }
         
-        canvas->pushLayer(globalRect.value(), layerAlpha, currentTransform, std::nullopt);
+        std::optional<CGRect> localRect;
+        if (configuration.canUseMoreMemory && globalSize.x <= minGlobalRectCalculationSize && globalSize.y <= minGlobalRectCalculationSize) {
+            localRect = CGRect::veryLarge();
+        } else {
+            localRect = getRenderNodeLocalRect(node, false, bezierPathsBoundingBoxContext);
+        }
+        if (!localRect) {
+            canvas->restoreState();
+            return;
+        }
+        
+        if (!canvas->pushLayer(localRect.value(), layerAlpha, currentTransform, std::nullopt, true)) {
+            canvas->restoreState();
+            return;
+        }
+        
         // Will restore to this state when applying the mask over current contents
         canvas->saveState();
     }
@@ -464,7 +551,7 @@ static void renderLottieRenderNode(std::shared_ptr<RenderTreeNode> node, std::sh
         canvas->restoreState();
         
         if ((node->mask() && !node->mask()->isHidden() && node->mask()->alpha() >= minVisibleAlpha) || masksToBounds) {
-            canvas->pushLayer(globalRect.value(), 1.0, currentTransform, lottie::Canvas::MaskMode::Normal);
+            canvas->pushLayer(globalRect.value(), 1.0, currentTransform, lottie::Canvas::MaskMode::Normal, false);
             
             if (masksToBounds) {
                 canvas->fill(CGRect(0.0f, 0.0f, node->size().x, node->size().y), Color(1.0f, 1.0f, 1.0f, 1.0f));
