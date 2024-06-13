@@ -3,7 +3,6 @@
 #include <cfloat>
 #include <math.h>
 #include <algorithm>
-#include <simd/simd.h>
 
 namespace lottie {
 
