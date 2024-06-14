@@ -31,7 +31,7 @@ public:
         return Vector2D(_animation->width, _animation->height);
     }
     
-    void setFrame(int index) {
+    void setFrame(float index) {
         _layer->setCurrentFrame(_animation->startFrame + index);
     }
     
@@ -81,7 +81,7 @@ Vector2D Renderer::size() {
     return _impl->size();
 }
 
-void Renderer::setFrame(int index) {
+void Renderer::setFrame(float index) {
     _impl->setFrame(index);
 }
 

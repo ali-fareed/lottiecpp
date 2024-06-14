@@ -23,7 +23,7 @@ public:
     int framesPerSecond();
     Vector2D size();
     
-    void setFrame(int index);
+    void setFrame(float index);
     std::shared_ptr<RenderTreeNode> renderNode();
 
 private:
