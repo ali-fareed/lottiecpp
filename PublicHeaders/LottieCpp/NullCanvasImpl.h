@@ -22,6 +22,8 @@ public:
     virtual void linearGradientStrokePath(CanvasPathEnumerator const &enumeratePath, float lineWidth, lottie::LineJoin lineJoin, lottie::LineCap lineCap, float dashPhase, std::vector<float> const &dashPattern, Gradient const &gradient, lottie::Vector2D const &start, lottie::Vector2D const &end) override;
     virtual void radialGradientStrokePath(CanvasPathEnumerator const &enumeratePath, float lineWidth, lottie::LineJoin lineJoin, lottie::LineCap lineCap, float dashPhase, std::vector<float> const &dashPattern, Gradient const &gradient, lottie::Vector2D const &startCenter, float startRadius, lottie::Vector2D const &endCenter, float endRadius) override;
     
+    virtual void clip(CGRect const &rect) override;
+    virtual bool clipPath(CanvasPathEnumerator const &enumeratePath, FillRule fillRule, Transform2D const &transform) override;
     virtual void concatenate(lottie::Transform2D const &transform) override;
     
     void flush();

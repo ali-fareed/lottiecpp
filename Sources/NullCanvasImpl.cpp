@@ -48,6 +48,13 @@ void NullCanvasImpl::radialGradientStrokePath(CanvasPathEnumerator const &enumer
     addEnumeratedPath(enumeratePath);
 }
 
+void NullCanvasImpl::clip(CGRect const &rect) {
+}
+
+bool NullCanvasImpl::clipPath(CanvasPathEnumerator const &enumeratePath, FillRule fillRule, Transform2D const &transform) {
+    return true;
+}
+
 void NullCanvasImpl::concatenate(lottie::Transform2D const &transform) {
 }
 

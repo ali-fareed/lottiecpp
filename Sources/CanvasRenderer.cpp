@@ -369,6 +369,129 @@ static void drawLottieContentItem(std::shared_ptr<Canvas> const &canvas, std::sh
     canvas->restoreState();
 }
 
+static bool clipToMaskItemIfPossible(std::shared_ptr<Canvas> const &canvas, std::shared_ptr<RenderTreeNodeContentItem> item, bool invertMask, Transform2D const &parentTransform) {
+    auto currentTransform = parentTransform;
+    Transform2D localTransform = item->transform;
+    currentTransform = localTransform * currentTransform;
+    
+    float normalizedOpacity = item->alpha;
+    if (normalizedOpacity < 1.0f - minVisibleAlpha) {
+        printf("fail clip to path: item alpha != 1.0\n");
+        return false;
+    }
+    
+    if (item->shadings.size() > 1) {
+        printf("fail clip to path: item->shadings.size() != 1\n");
+        return false;
+    }
+    
+    for (const auto &shading : item->shadings) {
+        CanvasPathEnumerator iteratePaths;
+        iteratePaths = [&](std::function<void(PathCommand const &)> &&iterate) {
+            enumeratePaths(item, shading->subItemLimit, Transform2D::identity(), true, [&](BezierPath const &sourcePath, Transform2D const &transform) {
+                auto path = sourcePath.copyUsingTransform(transform);
+                
+                PathCommand pathCommand;
+                std::optional<PathElement> previousElement;
+                for (const auto &element : path.elements()) {
+                    if (previousElement.has_value()) {
+                        if (previousElement->vertex.outTangentRelative().isZero() && element.vertex.inTangentRelative().isZero()) {
+                            pathCommand.type = PathCommandType::LineTo;
+                            pathCommand.points[0] = element.vertex.point;
+                            iterate(pathCommand);
+                        } else {
+                            pathCommand.type = PathCommandType::CurveTo;
+                            pathCommand.points[2] = element.vertex.point;
+                            pathCommand.points[1] = element.vertex.inTangent;
+                            pathCommand.points[0] = previousElement->vertex.outTangent;
+                            iterate(pathCommand);
+                        }
+                    } else {
+                        pathCommand.type = PathCommandType::MoveTo;
+                        pathCommand.points[0] = element.vertex.point;
+                        iterate(pathCommand);
+                    }
+                    previousElement = element;
+                }
+                if (path.closed().value_or(true)) {
+                    pathCommand.type = PathCommandType::Close;
+                    iterate(pathCommand);
+                }
+            });
+        };
+        
+        if (shading->stroke) {
+            printf("fail clip to path: item has stroke\n");
+            return false;
+        } else if (shading->fill) {
+            FillRule rule = FillRule::NonZeroWinding;
+            switch (shading->fill->rule) {
+                case FillRule::EvenOdd: {
+                    rule = FillRule::EvenOdd;
+                    break;
+                }
+                case FillRule::NonZeroWinding: {
+                    rule = FillRule::NonZeroWinding;
+                    break;
+                }
+                default: {
+                    break;
+                }
+            }
+            
+            if (shading->fill->shading->type() == RenderTreeNodeContentItem::ShadingType::Solid) {
+                RenderTreeNodeContentItem::SolidShading *solidShading = (RenderTreeNodeContentItem::SolidShading *)shading->fill->shading.get();
+                if (solidShading->opacity <= 1.0f - minVisibleAlpha) {
+                    printf("fail clip to path: shading alpha != 1.0\n");
+                    return false;
+                }
+                return canvas->clipPath(iteratePaths, rule, currentTransform);
+            } else if (shading->fill->shading->type() == RenderTreeNodeContentItem::ShadingType::Gradient) {
+                printf("fail clip to path: shading is gradient\n");
+                return false;
+            }
+        }
+    }
+    
+    for (auto it = item->subItems.rbegin(); it != item->subItems.rend(); it++) {
+        const auto &subItem = *it;
+        if (clipToMaskItemIfPossible(canvas, subItem, invertMask, currentTransform)) {
+            return true;
+        }
+    }
+    
+    return false;
+}
+
+static bool clipToMaskIfPossible(std::shared_ptr<Canvas> const &canvas, std::shared_ptr<RenderTreeNode> mask, bool invertMask, Transform2D const &parentTransform) {
+    if (invertMask) {
+        return false;
+    }
+    if (mask->alpha() < 1.0f - minVisibleAlpha) {
+        return false;
+    }
+    if (mask->drawContentCount != 1) {
+        return false;
+    }
+    
+    auto currentTransform = parentTransform;
+    Transform2D localTransform = mask->transform();
+    currentTransform = localTransform * currentTransform;
+    
+    if (mask->_contentItem) {
+        clipToMaskItemIfPossible(canvas, mask->_contentItem, invertMask, currentTransform);
+        return true;
+    }
+    
+    for (const auto &subnode : mask->subnodes()) {
+        if (clipToMaskIfPossible(canvas, subnode, invertMask, currentTransform)) {
+            return true;
+        }
+    }
+    
+    return false;
+}
+
 static void renderLottieRenderNode(std::shared_ptr<RenderTreeNode> node, std::shared_ptr<Canvas> const &canvas, Vector2D const &globalSize, Transform2D const &parentTransform, float parentAlpha, BezierPathsBoundingBoxContext &bezierPathsBoundingBoxContext, CanvasRenderer::Configuration const &configuration) {
     float normalizedOpacity = node->alpha();
     float layerAlpha = ((float)normalizedOpacity) * parentAlpha;
@@ -400,12 +523,16 @@ static void renderLottieRenderNode(std::shared_ptr<RenderTreeNode> node, std::sh
     }
     
     bool needsTempContext = false;
+    bool didClipToMask = false;
     if (node->mask() && !node->mask()->isHidden() && node->mask()->alpha() >= minVisibleAlpha) {
-        needsTempContext = true;
-    } else {
-        if (layerAlpha != 1.0 && node->drawContentCount > 1 && !configuration.disableGroupTransparency) {
+        if (clipToMaskIfPossible(canvas, node->mask(), node->invertMask(), Transform2D::identity())) {
+            didClipToMask = true;
+        } else {
             needsTempContext = true;
         }
+    }
+    if (layerAlpha != 1.0 && node->drawContentCount > 1 && !configuration.disableGroupTransparency) {
+        needsTempContext = true;
     }
     
     std::optional<CGRect> localRect;
@@ -447,7 +574,7 @@ static void renderLottieRenderNode(std::shared_ptr<RenderTreeNode> node, std::sh
     if (needsTempContext) {
         canvas->restoreState();
         
-        if ((node->mask() && !node->mask()->isHidden() && node->mask()->alpha() >= minVisibleAlpha)) {
+        if (!didClipToMask && (node->mask() && !node->mask()->isHidden() && node->mask()->alpha() >= minVisibleAlpha)) {
             canvas->pushLayer(localRect.value(), 1.0, node->invertMask() ? lottie::Canvas::MaskMode::Inverse : lottie::Canvas::MaskMode::Normal);
             
             if (node->mask() && !node->mask()->isHidden() && node->mask()->alpha() >= minVisibleAlpha) {
