@@ -369,19 +369,17 @@ static void drawLottieContentItem(std::shared_ptr<Canvas> const &canvas, std::sh
     canvas->restoreState();
 }
 
-static bool clipToMaskItemIfPossible(std::shared_ptr<Canvas> const &canvas, std::shared_ptr<RenderTreeNodeContentItem> item, bool invertMask, Transform2D const &parentTransform) {
+static bool clipToMaskItemIfPossible(std::shared_ptr<Canvas> const &canvas, std::shared_ptr<RenderTreeNodeContentItem> item, Transform2D const &parentTransform) {
     auto currentTransform = parentTransform;
     Transform2D localTransform = item->transform;
     currentTransform = localTransform * currentTransform;
     
     float normalizedOpacity = item->alpha;
     if (normalizedOpacity < 1.0f - minVisibleAlpha) {
-        printf("fail clip to path: item alpha != 1.0\n");
         return false;
     }
     
     if (item->shadings.size() > 1) {
-        printf("fail clip to path: item->shadings.size() != 1\n");
         return false;
     }
     
@@ -421,7 +419,6 @@ static bool clipToMaskItemIfPossible(std::shared_ptr<Canvas> const &canvas, std:
         };
         
         if (shading->stroke) {
-            printf("fail clip to path: item has stroke\n");
             return false;
         } else if (shading->fill) {
             FillRule rule = FillRule::NonZeroWinding;
@@ -442,12 +439,10 @@ static bool clipToMaskItemIfPossible(std::shared_ptr<Canvas> const &canvas, std:
             if (shading->fill->shading->type() == RenderTreeNodeContentItem::ShadingType::Solid) {
                 RenderTreeNodeContentItem::SolidShading *solidShading = (RenderTreeNodeContentItem::SolidShading *)shading->fill->shading.get();
                 if (solidShading->opacity <= 1.0f - minVisibleAlpha) {
-                    printf("fail clip to path: shading alpha != 1.0\n");
                     return false;
                 }
                 return canvas->clipPath(iteratePaths, rule, currentTransform);
             } else if (shading->fill->shading->type() == RenderTreeNodeContentItem::ShadingType::Gradient) {
-                printf("fail clip to path: shading is gradient\n");
                 return false;
             }
         }
@@ -455,7 +450,7 @@ static bool clipToMaskItemIfPossible(std::shared_ptr<Canvas> const &canvas, std:
     
     for (auto it = item->subItems.rbegin(); it != item->subItems.rend(); it++) {
         const auto &subItem = *it;
-        if (clipToMaskItemIfPossible(canvas, subItem, invertMask, currentTransform)) {
+        if (clipToMaskItemIfPossible(canvas, subItem, currentTransform)) {
             return true;
         }
     }
@@ -479,8 +474,7 @@ static bool clipToMaskIfPossible(std::shared_ptr<Canvas> const &canvas, std::sha
     currentTransform = localTransform * currentTransform;
     
     if (mask->_contentItem) {
-        clipToMaskItemIfPossible(canvas, mask->_contentItem, invertMask, currentTransform);
-        return true;
+        return clipToMaskItemIfPossible(canvas, mask->_contentItem, currentTransform);
     }
     
     for (const auto &subnode : mask->subnodes()) {
